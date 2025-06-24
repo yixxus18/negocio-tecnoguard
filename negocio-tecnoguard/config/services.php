@@ -31,4 +31,17 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication API Service
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for the external authentication API service
+    |
+    */
+    'auth' => [
+        'url' => env('AUTH_API_URL', 'http://localhost:8000'),
+        'token' => env('AUTH_API_TOKEN'),
+    ],
+
 ];

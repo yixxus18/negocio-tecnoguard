@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\JefeCerradaController;
 use App\Http\Controllers\GuardiaController;
 use App\Http\Controllers\JefeFamiliaController;
@@ -33,12 +34,20 @@ Route::middleware(['auth.passport'])->group(function () {
 
 // Rutas del Rol de Administrador
 Route::middleware(['auth.passport', 'role:1'])->group(function () {
+    // Rutas de Cerradas
     Route::post('/v1/admin/cerradas', [AdminController::class, 'crearCerrada']);
     Route::get('/v1/admin/cerradas', [AdminController::class, 'obtenerTodasCerradas']);
     Route::put('/v1/admin/cerradas/{id_cerrada}', [AdminController::class, 'actualizarCerrada']);
     Route::post('/v1/admin/cerradas/{id_cerrada}/asignar-jefe', [AdminController::class, 'asignarJefeCerrada']);
-    Route::post('/v1/admin/users', [AdminController::class, 'crearUsuarioAdministrativo']);
-    Route::get('/v1/admin/users/{id}', [AdminController::class, 'obtenerDetallesUsuario']);
+
+    // Rutas de Usuarios (CRUD completo)
+    Route::get('/v1/admin/users', [AdminUserController::class, 'index']);
+    Route::post('/v1/admin/users', [AdminUserController::class, 'store']);
+    Route::get('/v1/admin/users/{id}', [AdminUserController::class, 'show']);
+    Route::put('/v1/admin/users/{id}', [AdminUserController::class, 'update']);
+    Route::delete('/v1/admin/users/{id}', [AdminUserController::class, 'destroy']);
+
+    // Rutas de Configuración de Pagos
     Route::get('/v1/admin/config-pagos', [AdminController::class, 'listarConfiguracionesPagos']);
     Route::post('/v1/admin/config-pagos', [AdminController::class, 'crearConfiguracionPagos']);
     Route::get('/v1/admin/config-pagos/{id}', [AdminController::class, 'obtenerDetalleConfiguracion']);
