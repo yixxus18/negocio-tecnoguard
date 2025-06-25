@@ -12,7 +12,7 @@ class AdminUserSeeder extends Seeder
     {
         DB::table('users')->insert([
             'name' => 'Administrador',
-            'email' => 'yisuskroom@gmail.com',
+            'email' => 'admin@tecnoguard.com',
             'email_verified_at' => now(),
             'password' => Hash::make('admin123'),
             'phone' => '8711055582',
