@@ -21,8 +21,10 @@ class VerifyPassportToken
 
         if (!$token) {
             return response()->json([
+                'error' => 'unauthorized',
                 'message' => 'Token de acceso requerido',
-                'error' => 'UNAUTHORIZED'
+                'data' => null,
+                'status' => false
             ], 401);
         }
 
@@ -46,16 +48,20 @@ class VerifyPassportToken
                 return $next($request);
             } else {
                 return response()->json([
+                    'error' => 'invalid_token',
                     'message' => 'Token inválido o expirado',
-                    'error' => 'INVALID_TOKEN'
+                    'data' => null,
+                    'status' => false
                 ], 401);
             }
         } catch (\Exception $e) {
             Log::error('Error verificando token: ' . $e->getMessage());
 
             return response()->json([
+                'error' => 'internal_error',
                 'message' => 'Error interno del servidor',
-                'error' => 'INTERNAL_ERROR'
+                'data' => null,
+                'status' => false
             ], 500);
         }
     }

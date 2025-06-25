@@ -16,6 +16,15 @@ class WebSocketAuth
     public function handle(Request $request, Closure $next): Response
     {
         // TODO: Implementar lógica de autenticación para WebSocket
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'error' => 'unauthenticated',
+                'message' => 'No autenticado',
+                'data' => null,
+                'status' => false
+            ], 401);
+        }
         // Por ahora, simplemente permite el acceso
         return $next($request);
     }

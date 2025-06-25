@@ -27,4 +27,24 @@ class Handler extends ExceptionHandler
             //
         });
     }
+
+    /**
+     * Render an exception into an HTTP response.
+     */
+    public function render($request, Throwable $exception)
+    {
+        if ($request->expectsJson()) {
+            $status = ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException)
+                ? $exception->getStatusCode()
+                : 500;
+            $error = $exception->getMessage() ?: 'Error interno del servidor';
+            return response()->json([
+                'error' => class_basename($exception),
+                'message' => $error,
+                'data' => null,
+                'status' => false
+            ], $status);
+        }
+        return parent::render($request, $exception);
+    }
 }

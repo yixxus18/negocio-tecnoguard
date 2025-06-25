@@ -13,7 +13,7 @@ class CheckRole
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
-     * @param  mixed ...$roles  
+     * @param  mixed ...$roles
      * @return mixed
      */
     public function handle(Request $request, Closure $next, ...$roles)
@@ -21,14 +21,24 @@ class CheckRole
         $user = $request->user();
 
         if (!$user) {
-            return response()->json(['message' => 'No autenticado'], 401);
+            return response()->json([
+                'error' => 'unauthenticated',
+                'message' => 'No autenticado',
+                'data' => null,
+                'status' => false
+            ], 401);
         }
 
         // Convierte los roles a enteros para comparar con role_id
         $roleIds = array_map('intval', $roles);
 
         if (!in_array($user->role_id, $roleIds)) {
-            return response()->json(['message' => 'No autorizado'], 403);
+            return response()->json([
+                'error' => 'unauthorized',
+                'message' => 'No autorizado',
+                'data' => null,
+                'status' => false
+            ], 403);
         }
 
         return $next($request);
