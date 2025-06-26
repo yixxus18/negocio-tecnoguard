@@ -94,8 +94,7 @@ class AdminUserController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            // Obtener todos los usuarios activos
-            $users = User::where('is_active', 1)->get();
+            $users = User::all();
 
             // Transformar datos para incluir nombre del rol
             $roleMapping = [
@@ -195,13 +194,11 @@ class AdminUserController extends Controller
                 'name' => 'sometimes|string|max:255',
                 'email' => 'sometimes|email|max:255|unique:users,email,' . $id,
                 'phone' => 'sometimes|string|max:20',
-                'role' => 'sometimes|string|in:jefe_cerrada,guardia,jefe_familia,familiar'
             ], [
                 'name.string' => 'El nombre debe ser una cadena de texto.',
                 'email.email' => 'El formato del email no es válido.',
                 'email.unique' => 'El email ya está en uso.',
                 'phone.string' => 'El teléfono debe ser una cadena de texto.',
-                'role.in' => 'El rol especificado no es válido.'
             ]);
 
             if ($validator->fails()) {
@@ -216,18 +213,6 @@ class AdminUserController extends Controller
             }
 
             $updateData = $request->only(['name', 'email', 'phone']);
-
-            // Mapear rol si se proporciona
-            if ($request->has('role')) {
-                $roleMapping = [
-                    'jefe_cerrada' => 2,
-                    'guardia' => 3,
-                    'jefe_familia' => 4,
-                    'familiar' => 5
-                ];
-                $updateData['role_id'] = $roleMapping[$request->role];
-            }
-
             $user->update($updateData);
 
             return response()->json([
@@ -264,7 +249,6 @@ class AdminUserController extends Controller
                 ], 404);
             }
 
-            // Soft delete: cambiar is_active a 0
             $user->update(['is_active' => 0]);
 
             return response()->json([
