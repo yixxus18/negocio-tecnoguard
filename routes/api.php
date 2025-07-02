@@ -32,77 +32,45 @@ Route::middleware(['auth.passport'])->group(function () {
     Route::get('/profile', [UserController::class, 'profile']);
 });
 
-// Rutas del Rol de Administrador
-Route::middleware(['auth.passport', 'role:1'])->group(function () {
-    // Rutas de Cerradas
-    Route::post('/v1/admin/cerradas', [AdminController::class, 'crearCerrada']);
-    Route::get('/v1/admin/cerradas', [AdminController::class, 'obtenerTodasCerradas']);
-    Route::put('/v1/admin/cerradas/{id_cerrada}', [AdminController::class, 'actualizarCerrada']);
-    Route::post('/v1/admin/cerradas/{id_cerrada}/asignar-jefe', [AdminController::class, 'asignarJefeCerrada']);
+Route::prefix('v1')->group(function () {
+    // Rutas del Rol de Administrador
+    Route::middleware(['auth.passport', 'role:1'])->group(function () {
 
-    // Rutas de Usuarios (CRUD completo)
-    Route::get('/v1/admin/users', [AdminUserController::class, 'index']);
-    Route::post('/v1/admin/users', [AdminUserController::class, 'store']);
-    Route::get('/v1/admin/users/{id}', [AdminUserController::class, 'show']);
-    Route::put('/v1/admin/users/{id}', [AdminUserController::class, 'update']);
-    Route::delete('/v1/admin/users/{id}', [AdminUserController::class, 'destroy']);
+        // Rutas de Usuarios, Cerradas y Configuración de pagos (CRUD completo)
+        Route::resource('users', AdminUserController::class)->except(['edit', 'create']);
+        Route::resource('config-pagos', AdminController::class)->except(['edit', 'create']);
+        Route::resource('cerradas', AdminController::class)->except(['edit', 'create']);
+    });
 
-    // Rutas de Configuración de Pagos
-    Route::get('/v1/admin/config-pagos', [AdminController::class, 'listarConfiguracionesPagos']);
-    Route::post('/v1/admin/config-pagos', [AdminController::class, 'crearConfiguracionPagos']);
-    Route::get('/v1/admin/config-pagos/{id}', [AdminController::class, 'obtenerDetalleConfiguracion']);
-    Route::put('/v1/admin/config-pagos/{id}', [AdminController::class, 'actualizarConfiguracionPagos']);
+    // Rutas del Rol de Jefe de Cerrada
+    Route::middleware(['auth.passport', 'role:2'])->prefix('jefe-cerrada')->group(function () {
+        Route::get('familias', [JefeCerradaController::class, 'obtenerFamiliasCerrada']);
+        Route::post('guardia', [JefeCerradaController::class, 'asignarGuardiaCerrada']);
+        Route::get('guardia', [JefeCerradaController::class, 'obtenerGuardiasCerrada']);
+        Route::post('pagos', [JefeCerradaController::class, 'procesarPagoFamilia']);
+    });
+
+    // Rutas del Rol de Guardia
+    Route::middleware(['auth.passport', 'role:3'])->prefix('guardia')->group(function () {
+        Route::get('access-logs', [GuardiaController::class, 'obtenerLogsAcceso']);
+        Route::get('tokens', [GuardiaController::class, 'obtenerTokensActivos']);
+        Route::post('tokens/service', [GuardiaController::class, 'crearTokenServicio']);
+    });
+
+    // Rutas del Rol de Jefe de Familia
+    Route::middleware(['auth.passport', 'role:4'])->prefix('propietario')->group(function () {
+        Route::post('tokens', [JefeFamiliaController::class, 'generarTokenAcceso']);
+        Route::post('family-members', [JefeFamiliaController::class, 'agregarMiembroFamilia']);
+        Route::get('family-members', [JefeFamiliaController::class, 'obtenerMiembrosFamilia']);
+        Route::delete('family-members/{member_id}', [JefeFamiliaController::class, 'eliminarMiembroFamilia']);
+        Route::get('account-status', [JefeFamiliaController::class, 'consultarSaldoEstado']);
+        Route::get('my-family/membership', [JefeFamiliaController::class, 'obtenerHistorialMembresia']);
+    });
+
+    // Rutas del Rol de Familiar
+    Route::middleware(['auth.passport', 'role:5'])->prefix('familiar')->group(function () {
+        Route::get('me', [FamiliarController::class, 'obtenerInformacionPersonal']);
+        Route::put('me', [FamiliarController::class, 'actualizarInformacionPersonal']);
+    });
+    
 });
-
-// Rutas del Rol de Jefe de Cerrada
-Route::middleware(['auth.passport', 'role:2'])->group(function () {
-    Route::get('/v1/jefe-cerrada/familias', [JefeCerradaController::class, 'obtenerFamiliasCerrada']);
-    Route::post('/v1/jefe-cerrada/guardia', [JefeCerradaController::class, 'asignarGuardiaCerrada']);
-    Route::get('/v1/jefe-cerrada/guardias', [JefeCerradaController::class, 'obtenerGuardiasCerrada']);
-    Route::post('/v1/jefe-cerrada/pagos', [JefeCerradaController::class, 'procesarPagoFamilia']);
-});
-
-// Rutas del Rol de Guardia
-Route::middleware(['auth.passport', 'role:3'])->group(function () {
-    Route::get('/v1/guardia/access-logs', [GuardiaController::class, 'obtenerLogsAcceso']);
-    Route::get('/v1/guardia/tokens', [GuardiaController::class, 'obtenerTokensActivos']);
-    Route::post('/v1/guardia/tokens/service', [GuardiaController::class, 'crearTokenServicio']);
-});
-
-// Rutas del Rol de Jefe de Familia
-Route::middleware(['auth.passport', 'role:4'])->group(function () {
-    Route::post('/v1/propietario/tokens', [JefeFamiliaController::class, 'generarTokenAcceso']);
-    Route::post('/v1/jefe-familia/family-members', [JefeFamiliaController::class, 'agregarMiembroFamilia']);
-    Route::get('/v1/propietario/family-members', [JefeFamiliaController::class, 'obtenerMiembrosFamilia']);
-    Route::delete('/v1/propietario/family-members/{member_id}', [JefeFamiliaController::class, 'eliminarMiembroFamilia']);
-    Route::get('/v1/propietario/account-status', [JefeFamiliaController::class, 'consultarSaldoEstado']);
-    Route::get('/v1/propietario/my-family/membership', [JefeFamiliaController::class, 'obtenerHistorialMembresia']);
-});
-
-// Rutas del Rol de Familiar
-Route::middleware(['auth.passport', 'role:5'])->group(function () {
-    Route::get('/v1/familiar/me', [FamiliarController::class, 'obtenerInformacionPersonal']);
-    Route::put('/v1/familiar/me', [FamiliarController::class, 'actualizarInformacionPersonal']);
-});
-
-// Rutas de Tiempo Real (WebSockets)
-Route::middleware(['auth.passport'])->group(function () {
-    // Estas rutas son para WebSockets, pero en Laravel se manejarían con BeyondCode/LaravelWebSockets o similar
-    Route::get('/ws/camera-stream', function () {
-        // Manejar conexión WebSocket para stream de cámara
-    })->middleware('websocket.auth');
-
-    Route::get('/ws/entrada', function () {
-        // Manejar conexión WebSocket para abrir puerta de entrada
-    })->middleware('websocket.auth');
-
-    Route::get('/ws/salida', function () {
-        // Manejar conexión WebSocket para abrir puerta de salida
-    })->middleware('websocket.auth');
-
-    Route::get('/ws/peatonal', function () {
-        // Manejar conexión WebSocket para abrir puerta peatonal
-    })->middleware('websocket.auth');
-});
-
-

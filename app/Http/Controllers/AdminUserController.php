@@ -97,18 +97,19 @@ class AdminUserController extends Controller
             $users = User::all();
 
             // Transformar datos para incluir nombre del rol
-            $roleMapping = [
-                1 => 'admin',
-                2 => 'jefe_cerrada',
-                3 => 'guardia',
-                4 => 'jefe_familia',
-                5 => 'familiar'
-            ];
+            // $roleMapping = [
+            //     1 => 'admin',
+            //     2 => 'jefe_cerrada',
+            //     3 => 'guardia',
+            //     4 => 'jefe_familia',
+            //     5 => 'familiar'
+            // ];
 
-            $users->transform(function($user) use ($roleMapping) {
-                $user->role_name = $roleMapping[$user->role_id] ?? 'unknown';
-                return $user;
-            });
+            // $users->transform(function($user) use ($roleMapping) {
+            //     $user->role_name = $roleMapping[$user->role_id] ?? 'unknown';
+            //     return $user;
+            // });
+            $users->load('role');
 
             return response()->json([
                 'message' => 'Usuarios obtenidos exitosamente.',
@@ -144,16 +145,18 @@ class AdminUserController extends Controller
                 ], 404);
             }
 
-            // Mapear role_id a nombre de rol
-            $roleMapping = [
-                1 => 'admin',
-                2 => 'jefe_cerrada',
-                3 => 'guardia',
-                4 => 'jefe_familia',
-                5 => 'familiar'
-            ];
+            // // Mapear role_id a nombre de rol
+            // $roleMapping = [
+            //     1 => 'admin',
+            //     2 => 'jefe_cerrada',
+            //     3 => 'guardia',
+            //     4 => 'jefe_familia',
+            //     5 => 'familiar'
+            // ];
 
-            $user->role_name = $roleMapping[$user->role_id] ?? 'unknown';
+            // $user->role_name = $roleMapping[$user->role_id] ?? 'unknown';
+
+            $user->load('role');
 
             return response()->json([
                 'message' => 'Usuario obtenido exitosamente.',
@@ -249,7 +252,7 @@ class AdminUserController extends Controller
                 ], 404);
             }
 
-            $user->update(['is_active' => 0]);
+            $user->update(['is_active' => $user->is_active]);
 
             return response()->json([
                 'message' => 'Usuario eliminado exitosamente.',
