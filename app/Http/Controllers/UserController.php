@@ -23,9 +23,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'Información del usuario obtenida exitosamente',
-            'data' => [
-                'user' => $user
-            ]
+            'data' => $user
         ]);
     }
 

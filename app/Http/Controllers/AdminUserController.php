@@ -95,7 +95,6 @@ class AdminUserController extends Controller
     {
         try {
             $users = User::all();
-
             // Transformar datos para incluir nombre del rol
             // $roleMapping = [
             //     1 => 'admin',

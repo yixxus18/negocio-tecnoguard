@@ -26,13 +26,15 @@ Route::get('/health', function () {
     return response()->json(['status' => 'OK', 'message' => 'API funcionando correctamente']);
 });
 
-// Rutas de usuario autenticado (sin verificación de rol)
-Route::middleware(['auth.passport'])->group(function () {
-    Route::get('/me', [UserController::class, 'me']);
-    Route::get('/profile', [UserController::class, 'profile']);
-});
+
 
 Route::prefix('v1')->group(function () {
+    // Rutas de usuario autenticado (sin verificación de rol)
+    Route::middleware(['auth.passport'])->group(function () {
+        Route::get('/me', [UserController::class, 'me']);
+        Route::get('/profile', [UserController::class, 'profile']);
+    });
+
     // Rutas del Rol de Administrador
     Route::middleware(['auth.passport', 'role:1'])->group(function () {
 
@@ -72,5 +74,5 @@ Route::prefix('v1')->group(function () {
         Route::get('me', [FamiliarController::class, 'obtenerInformacionPersonal']);
         Route::put('me', [FamiliarController::class, 'actualizarInformacionPersonal']);
     });
-    
+
 });

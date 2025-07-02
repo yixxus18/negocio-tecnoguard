@@ -33,7 +33,7 @@ class VerifyPassportToken
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Accept' => 'application/json',
-            ])->get('http://localhost:8000/api/user');
+            ])->get('http://192.168.254.223:8000/api/user');
             Log::info('Respuesta de verificación de Passport token', [
                 'status' => $response->status(),
                 'body' => $response->body(),
