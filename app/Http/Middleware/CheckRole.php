@@ -17,10 +17,9 @@ class CheckRole
      * @param  mixed ...$roles
      * @return mixed
      */
-    public function handle(Request $request, Closure $next, ...$rol)
+    public function handle(Request $request, Closure $next, ...$roles)
     {
-        $data = $request->user();
-        $user = $data->data;
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -30,8 +29,11 @@ class CheckRole
                 'status' => false
             ], 401);
         }
-       
-        if ($user['role_id'] != $rol[0]) {
+
+        // Convierte los roles a enteros para comparar con role_id
+        $roleIds = array_map('intval', $roles);
+
+        if (!in_array($user->role_id, $roleIds)) {
             return response()->json([
                 'error' => 'unauthorized',
                 'message' => 'No autorizado',
