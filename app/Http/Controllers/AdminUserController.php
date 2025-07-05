@@ -7,6 +7,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\Cerrada;
+use App\Models\FamilyGroup;
 
 class AdminUserController extends Controller
 {
@@ -19,21 +21,13 @@ class AdminUserController extends Controller
         try {
             // Validar datos de entrada
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255|unique:users,email',
-                'password' => 'required|string|min:8',
-                'phone' => 'required|string|max:20',
-                'role' => 'required|string|in:jefe_cerrada,guardia,jefe_familia,familiar'
+                'phone' => 'required|string|max:15|unique:users,phone',
+                'cerrada_id' => 'required|integer|exists:cerradas,id'
             ], [
-                'name.required' => 'El nombre es obligatorio.',
-                'email.required' => 'El email es obligatorio.',
-                'email.email' => 'El formato del email no es válido.',
-                'email.unique' => 'El email ya está en uso.',
-                'password.required' => 'La contraseña es obligatoria.',
-                'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
                 'phone.required' => 'El teléfono es obligatorio.',
-                'role.required' => 'El rol es obligatorio.',
-                'role.in' => 'El rol especificado no es válido.'
+                'phone.unique' => 'El teléfono ya está registrado.',
+                'cerrada_id.required' => 'La cerrada es obligatoria.',
+                'cerrada_id.exists' => 'La cerrada especificada no existe.'
             ]);
 
             if ($validator->fails()) {
@@ -47,32 +41,49 @@ class AdminUserController extends Controller
                 ], 422);
             }
 
-            // Mapear roles a IDs
-            $roleMapping = [
-                'jefe_cerrada' => 2,
-                'guardia' => 3,
-                'jefe_familia' => 4,
-                'familiar' => 5
-            ];
+            // Verificar que la cerrada existe
+            $cerrada = Cerrada::find($request->cerrada_id);
+            if (!$cerrada) {
+                return response()->json([
+                    'error' => 'not_found',
+                    'message' => 'La cerrada especificada no existe.',
+                    'data' => null,
+                    'status' => false
+                ], 404);
+            }
 
-            $roleId = $roleMapping[$request->role];
+            // Crear grupo familiar
+            $familyGroup = FamilyGroup::create([
+                'cerrada_id' => $request->cerrada_id,
+                'is_active' => true
+            ]);
 
-            // Crear usuario en la base de datos local
+            // Crear usuario con datos mínimos (se completará en el registro)
             $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'name' => 'Pendiente de registro',
+                'email' => 'pendiente@registro.com',
+                'password' => Hash::make('temporal123'),
                 'phone' => $request->phone,
-                'role_id' => $roleId
+                'role_id' => 4, // Jefe de Familia por defecto
+                'family_id' => $familyGroup->id,
+                'is_active' => true,
+                'email_verified_at' => null, // Se verificará en el registro
+                'direccion' => null,
+                'direccion_verified' => false,
+                'two_factor_enabled' => false
             ]);
 
             return response()->json([
-                'message' => 'Usuario creado y rol asignado exitosamente.',
+                'message' => 'Usuario creado exitosamente. El usuario podrá completar su registro con su teléfono.',
                 'data' => [
                     'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $request->role
+                    'phone' => $user->phone,
+                    'family_id' => $familyGroup->id,
+                    'cerrada' => [
+                        'id' => $cerrada->id,
+                        'nombre' => $cerrada->nombre
+                    ],
+                    'status' => 'pendiente_registro'
                 ],
                 'status' => 201
             ], 201);
@@ -95,19 +106,6 @@ class AdminUserController extends Controller
     {
         try {
             $users = User::all();
-            // Transformar datos para incluir nombre del rol
-            // $roleMapping = [
-            //     1 => 'admin',
-            //     2 => 'jefe_cerrada',
-            //     3 => 'guardia',
-            //     4 => 'jefe_familia',
-            //     5 => 'familiar'
-            // ];
-
-            // $users->transform(function($user) use ($roleMapping) {
-            //     $user->role_name = $roleMapping[$user->role_id] ?? 'unknown';
-            //     return $user;
-            // });
             $users->load('role');
 
             return response()->json([
@@ -143,18 +141,6 @@ class AdminUserController extends Controller
                     'status' => false
                 ], 404);
             }
-
-            // // Mapear role_id a nombre de rol
-            // $roleMapping = [
-            //     1 => 'admin',
-            //     2 => 'jefe_cerrada',
-            //     3 => 'guardia',
-            //     4 => 'jefe_familia',
-            //     5 => 'familiar'
-            // ];
-
-            // $user->role_name = $roleMapping[$user->role_id] ?? 'unknown';
-
             $user->load('role');
 
             return response()->json([

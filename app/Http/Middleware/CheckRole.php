@@ -30,10 +30,8 @@ class CheckRole
             ], 401);
         }
 
-        // Convierte los roles a enteros para comparar con role_id
-        $roleIds = array_map('intval', $roles);
-
-        if (!in_array($user->role_id, $roleIds)) {
+        // Verificar si el usuario tiene alguno de los roles permitidos
+        if (!in_array($user->role_id, $roles)) {
             return response()->json([
                 'error' => 'unauthorized',
                 'message' => 'No autorizado',
