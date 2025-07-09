@@ -24,22 +24,19 @@ use App\Http\Controllers\UserController;
 
 Route::middleware(['auth.api'])->prefix('v1')->group(function () {
 
-    Route::middleware(['auth:api'])->group(function () {
-        Route::get('/me', [UserController::class, 'me']);
-        Route::get('/profile', [UserController::class, 'profile']);
-    });
+    // Rutas públicas autenticadas
+    Route::get('/me', [UserController::class, 'me']);
+    Route::get('/profile', [UserController::class, 'profile']);
 
     // Rutas del Rol de Administrador
-    Route::middleware(['auth:api', 'role:1'])->group(function () {
-
-        // Rutas de Usuarios, Cerradas y Configuración de pagos (CRUD completo)
+    Route::middleware(['role:1'])->group(function () {
         Route::resource('users', AdminUserController::class)->except(['edit', 'create']);
         Route::resource('config-pagos', AdminController::class)->except(['edit', 'create']);
         Route::resource('cerradas', AdminController::class)->except(['edit', 'create']);
     });
 
     // Rutas del Rol de Jefe de Cerrada
-    Route::middleware(['auth:api', 'role:2'])->prefix('jefe-cerrada')->group(function () {
+    Route::middleware(['role:2'])->prefix('jefe-cerrada')->group(function () {
         Route::get('familias', [JefeCerradaController::class, 'obtenerFamiliasCerrada']);
         Route::post('guardia', [JefeCerradaController::class, 'asignarGuardiaCerrada']);
         Route::get('guardia', [JefeCerradaController::class, 'obtenerGuardiasCerrada']);
@@ -47,14 +44,14 @@ Route::middleware(['auth.api'])->prefix('v1')->group(function () {
     });
 
     // Rutas del Rol de Guardia
-    Route::middleware(['auth:api', 'role:3'])->prefix('guardia')->group(function () {
+    Route::middleware(['role:3'])->prefix('guardia')->group(function () {
         Route::get('access-logs', [GuardiaController::class, 'obtenerLogsAcceso']);
         Route::get('tokens', [GuardiaController::class, 'obtenerTokensActivos']);
         Route::post('tokens/service', [GuardiaController::class, 'crearTokenServicio']);
     });
 
     // Rutas del Rol de Jefe de Familia
-    Route::middleware(['auth:api', 'role:4'])->prefix('propietario')->group(function () {
+    Route::middleware(['role:4'])->prefix('propietario')->group(function () {
         Route::post('tokens', [JefeFamiliaController::class, 'generarTokenAcceso']);
         Route::post('family-members', [JefeFamiliaController::class, 'agregarMiembroFamilia']);
         Route::get('family-members', [JefeFamiliaController::class, 'obtenerMiembrosFamilia']);
@@ -64,7 +61,7 @@ Route::middleware(['auth.api'])->prefix('v1')->group(function () {
     });
 
     // Rutas del Rol de Familiar
-    Route::middleware(['auth:api', 'role:5'])->prefix('familiar')->group(function () {
+    Route::middleware(['role:5'])->prefix('familiar')->group(function () {
         Route::get('me', [FamiliarController::class, 'obtenerInformacionPersonal']);
         Route::put('me', [FamiliarController::class, 'actualizarInformacionPersonal']);
     });
