@@ -38,7 +38,7 @@ class Handler extends ExceptionHandler
     {
         if ($request->expectsJson()) {
             // Model not found
-            if ($exception instanceof ModelNotFoundException) {
+            if ($exception instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
                 return response()->json([
                     'error' => 'ModelNotFoundException',
                     'message' => 'Recurso no encontrado',
@@ -47,7 +47,7 @@ class Handler extends ExceptionHandler
                 ], 404);
             }
             // No autenticado
-            if ($exception instanceof AuthenticationException) {
+            if ($exception instanceof \Illuminate\Auth\AuthenticationException) {
                 return response()->json([
                     'error' => 'AuthenticationException',
                     'message' => 'No autenticado',
@@ -56,7 +56,7 @@ class Handler extends ExceptionHandler
                 ], 401);
             }
             // Validación
-            if ($exception instanceof ValidationException) {
+            if ($exception instanceof \Illuminate\Validation\ValidationException) {
                 return response()->json([
                     'error' => 'ValidationException',
                     'message' => $exception->getMessage(),
@@ -68,13 +68,20 @@ class Handler extends ExceptionHandler
             $status = ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException)
                 ? $exception->getStatusCode()
                 : 500;
-            $error = $exception->getMessage() ?: 'Error interno del servidor';
-            return response()->json([
-                'error' => class_basename($exception),
-                'message' => $error,
+            $error = class_basename($exception);
+            $message = $exception->getMessage() ?: 'Error interno del servidor';
+            $response = [
+                'error' => $error,
+                'message' => $message,
                 'data' => null,
                 'status' => false
-            ], $status);
+            ];
+            // Si está en modo debug, agregar detalles de la excepción
+            if (config('app.debug')) {
+                $response['exception'] = $error;
+                $response['trace'] = $exception->getTrace();
+            }
+            return response()->json($response, $status);
         }
         return parent::render($request, $exception);
     }
