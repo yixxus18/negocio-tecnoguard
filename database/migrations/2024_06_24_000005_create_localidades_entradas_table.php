@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('localidades_entradas', function (Blueprint $table) {
             $table->id();
             $table->decimal('latitud', 10, 8);
-        $table->decimal('longitud', 11, 8);
+            $table->decimal('longitud', 11, 8);
         });
     }
 
@@ -18,4 +18,4 @@ return new class extends Migration {
     {
         Schema::dropIfExists('localidades_entradas');
     }
-}; 
+};

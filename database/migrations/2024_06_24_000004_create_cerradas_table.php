@@ -13,6 +13,7 @@ return new class extends Migration {
             $table->text('description')->nullable();
             $table->unsignedBigInteger('configuration_pay_date')->nullable();
             $table->unsignedBigInteger('guard_id')->nullable();
+            $table->foreignId('jefe_cerrada')->nullable()->references('id')->on('users');
             $table->timestamps();
 
             $table->foreign('configuration_pay_date')
