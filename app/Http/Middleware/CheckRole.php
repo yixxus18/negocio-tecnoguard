@@ -19,12 +19,11 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        $user = $request->user();
-
+        $user = $request->get('auth_user');
         if (!$user) {
             return response()->json([
                 'error' => 'unauthenticated',
-                'message' => 'No autenticado',
+                'message' => 'No autenticado2',
                 'data' => null,
                 'status' => false
             ], 401);
