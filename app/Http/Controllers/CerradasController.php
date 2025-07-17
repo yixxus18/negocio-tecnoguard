@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cerradas\JefeCerradaReq;
 use App\Http\Requests\Cerradas\StrCerradaReq;
 use App\Http\Requests\Cerradas\UpdCerradaReq;
 use App\Models\Cerrada;
@@ -19,7 +20,7 @@ class CerradasController extends Controller
         return response()->json(['data' => Cerrada::all(), 'message' => 'Lista de cerradas obtenida exitosamente.', 'status' => true]);
     }
 
-    
+
     /**
      * Store a newly created resource in storage.
      */
@@ -27,7 +28,7 @@ class CerradasController extends Controller
     {
         $data = $request->validated();
         $cerrada = Cerrada::create($data);
-        return response()->json(['data' => $cerrada, 'message' => 'Cerrada creada exitosamente', 'status' => true]);
+        return response()->json(['data' => $cerrada, 'message' => 'Cerrada creada exitosamente', 'status' => true], 201);
     }
 
     /**
@@ -46,9 +47,27 @@ class CerradasController extends Controller
     {
         $data = $request->validated();
         $cerrada = Cerrada::find($id);
+        if (!$cerrada) {
+            return response()->json(['message' => 'La cerrada no fue encontrada', 'status' => false], 404);
+        }
         $cerrada->update($data);
-        return response()->json(['data'=> $cerrada,'message'=> 'Cerrada actualizada exitosamente', 'status'=> true]);
+        return response()->json(['data' => $cerrada, 'message' => 'Cerrada actualizada exitosamente', 'status' => true]);
     }
 
+
+    public function setJefeDeCerrada(int $id, JefeCerradaReq $request)
+    {
+        $data = $request->validated();
+        $cerrada = Cerrada::find($id);
+        if (!$cerrada) {
+            return response()->json([
+                'message' => 'El usuario o la cerrada especificados no existen.',
+                'status' => false
+            ], 404);
+        }
+        $cerrada->jefe_cerrada_id = $data->user_id;
+        $cerrada->save();
+        return response()->json(['data'=> $cerrada, 'message'=> 'Jefe de cerrada asignado exitosamente a '.$cerrada->group_name, 'status'=> true]);
+    }
 
 }

@@ -102,7 +102,7 @@ class AdminUserController extends Controller
      * Obtener lista de usuarios
      * GET /api/v1/admin/users
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
         try {
             $users = User::all();

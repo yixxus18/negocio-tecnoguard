@@ -19,6 +19,7 @@ class Cerrada extends Model
         'description',
         'configuration_pay_date',
         'guard_id',
+        'jefe_cerrada_id'
     ];
 
     protected $casts = [
