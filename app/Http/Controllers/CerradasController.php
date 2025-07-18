@@ -26,7 +26,7 @@ class CerradasController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->validated([
+        $data = $request->validate([
             'nombre' => 'required|alpha|unique:cerradas,group_name|max:127|min:5',
             'latitud' => 'required|decimal:10,6',
             'longitud' => 'required|decimal:10,6',
