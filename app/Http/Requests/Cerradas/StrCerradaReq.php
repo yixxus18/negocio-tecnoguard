@@ -23,8 +23,8 @@ class StrCerradaReq extends FormRequest
     {
         return [
             'nombre' => 'required|alpha|unique:cerradas,group_name|max:127|min:5',
-            'latitud'=> 'required|decimal:8',
-            'longitud'=>'required|decimal:8',
+            'latitud'=> 'required|decimal:10,6',
+            'longitud'=>'required|decimal:10,6',
         ];
     }
 }
