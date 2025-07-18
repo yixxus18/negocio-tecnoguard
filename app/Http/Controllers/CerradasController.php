@@ -24,9 +24,13 @@ class CerradasController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StrCerradaReq $request)
+    public function store(Request $request)
     {
-        $data = $request->validated();
+        $data = $request->validated([
+            'nombre' => 'required|alpha|unique:cerradas,group_name|max:127|min:5',
+            'latitud' => 'required|decimal:10,6',
+            'longitud' => 'required|decimal:10,6',
+        ]);
         $cerrada = Cerrada::create($data);
         return response()->json(['data' => $cerrada, 'message' => 'Cerrada creada exitosamente', 'status' => true], 201);
     }
@@ -67,7 +71,7 @@ class CerradasController extends Controller
         }
         $cerrada->jefe_cerrada_id = $data->user_id;
         $cerrada->save();
-        return response()->json(['data'=> $cerrada, 'message'=> 'Jefe de cerrada asignado exitosamente a '.$cerrada->group_name, 'status'=> true]);
+        return response()->json(['data' => $cerrada, 'message' => 'Jefe de cerrada asignado exitosamente a ' . $cerrada->group_name, 'status' => true]);
     }
 
 }
