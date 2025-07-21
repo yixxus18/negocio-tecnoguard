@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Cerradas;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StrCerradaReq extends FormRequest
 {
@@ -22,9 +24,10 @@ class StrCerradaReq extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => 'required|alpha|unique:cerradas,group_name|max:127|min:5',
+            'nombre' => 'required|string|unique:cerradas,group_name|max:127|min:5',
             'latitud'=> 'required|decimal:10,6',
             'longitud'=>'required|decimal:10,6',
         ];
     }
+
 }

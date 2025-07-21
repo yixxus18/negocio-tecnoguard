@@ -11,5 +11,5 @@ Route::middleware(['role:1'])->group(function () {
     Route::resource('config-pagos', AdminController::class)->except(['edit', 'create']);
     Route::resource('cerradas', CerradasController::class)->except(['edit', 'create', 'destroy']);
 
-    Route::post('cerradas/{id}/asignar-jefe', [CerradasController::class,'']);
+    //Route::post('cerradas/{id}/asignar-jefe', [CerradasController::class,'setJefeDeCerrada']);
 });

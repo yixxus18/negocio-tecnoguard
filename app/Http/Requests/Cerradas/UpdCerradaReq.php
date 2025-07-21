@@ -22,7 +22,7 @@ class UpdCerradaReq extends FormRequest
     public function rules(): array
     {
          return [
-            'nombre' => 'sometimes|alpha|unique:cerradas,group_name|max:127|min:5',
+            'nombre' => 'sometimes|string|unique:cerradas,group_name|max:127|min:5',
             'latitud'=> 'sometimes|decimal:8',
             'longitud'=>'sometimes|decimal:8',
         ];

@@ -33,12 +33,12 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
-            Route::middleware('web')
-                ->group(base_path('routes/web.php'));
-
-            Route::prefix('api/v1/admin')
-                ->middleware(['api', 'auth.api'])
-                ->group(base_path('routes/others/admin.routes.php'));
+            Route::group([
+                'prefix' => 'api/v1/admin',
+                'middleware' => ['api', 'auth.api']
+            ], function () {
+                require base_path('routes/others/admin.routes.php');
+            });
 
             Route::prefix('api/v1/familiar')
                 ->middleware(['api', 'auth.api'])
@@ -59,6 +59,8 @@ class RouteServiceProvider extends ServiceProvider
                 ->middleware(['api', 'auth.api'])
                 ->group(base_path('routes/others/jefe_cerrada.routes.php'));
 
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
         });
     }
 }

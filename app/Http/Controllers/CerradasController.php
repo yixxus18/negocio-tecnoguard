@@ -7,8 +7,10 @@ use App\Http\Requests\Cerradas\JefeCerradaReq;
 use App\Http\Requests\Cerradas\StrCerradaReq;
 use App\Http\Requests\Cerradas\UpdCerradaReq;
 use App\Models\Cerrada;
+use App\Models\LocalidadEntrada;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Log;
 
 class CerradasController extends Controller
 {
@@ -24,15 +26,36 @@ class CerradasController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StrCerradaReq $request)
     {
-        $data = $request->validate([
-            'nombre' => 'required|alpha|unique:cerradas,group_name|max:127|min:5',
-            'latitud' => 'required|decimal:10,6',
-            'longitud' => 'required|decimal:10,6',
-        ]);
-        $cerrada = Cerrada::create($data);
-        return response()->json(['data' => $cerrada, 'message' => 'Cerrada creada exitosamente', 'status' => true], 201);
+        try {
+            $data = $request->validated();
+            $cerrada = Cerrada::create([
+                'group_name' => $data['nombre']
+            ]);
+
+            $localidad = LocalidadEntrada::create([
+                'latitud' => $data['latitud'],
+                'longitud' => $data['longitud']
+            ]);
+
+            $cerrada->localidadesEntradas()->attach($localidad->id);
+
+            return response()->json([
+                'data' => $cerrada,
+                'message' => 'Cerrada creada exitosamente',
+                'status' => true
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating cerrada: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'message' => 'Error interno del servidor: ' . $e->getMessage(),
+                'status' => false
+            ], 500);
+        }
     }
 
     /**
@@ -72,6 +95,48 @@ class CerradasController extends Controller
         $cerrada->jefe_cerrada_id = $data->user_id;
         $cerrada->save();
         return response()->json(['data' => $cerrada, 'message' => 'Jefe de cerrada asignado exitosamente a ' . $cerrada->group_name, 'status' => true]);
+    }
+
+    /**
+     * Asociar localidades a una cerrada
+     */
+    public function asociarLocalidades(int $cerradaId, Request $request)
+    {
+        $request->validate([
+            'localidades' => 'required|array',
+            'localidades.*' => 'exists:localidades_entradas,id'
+        ]);
+
+        $cerrada = Cerrada::find($cerradaId);
+        if (!$cerrada) {
+            return response()->json(['message' => 'Cerrada no encontrada', 'status' => false], 404);
+        }
+
+        // Asociar localidades sin quitar las existentes
+        $cerrada->localidadesEntradas()->syncWithoutDetaching($request->localidades);
+
+        return response()->json([
+            'message' => 'Localidades asociadas exitosamente',
+            'status' => true
+        ]);
+    }
+
+    /**
+     * Desasociar una localidad de una cerrada
+     */
+    public function desasociarLocalidad(int $cerradaId, int $localidadId)
+    {
+        $cerrada = Cerrada::find($cerradaId);
+        if (!$cerrada) {
+            return response()->json(['message' => 'Cerrada no encontrada', 'status' => false], 404);
+        }
+
+        $cerrada->localidadesEntradas()->detach($localidadId);
+
+        return response()->json([
+            'message' => 'Localidad desasociada exitosamente',
+            'status' => true
+        ]);
     }
 
 }

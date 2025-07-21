@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiAuth
@@ -17,6 +18,7 @@ class ApiAuth
     public function handle(Request $request, Closure $next): Response
     {
         try {
+           
             // Verificar si hay un token Bearer
             $token = $request->bearerToken();
 
@@ -44,7 +46,7 @@ class ApiAuth
 
             // Agregar el usuario a la request para que esté disponible en los controladores
             $request->merge(['auth_user' => $user]);
-
+ 
             return $next($request);
 
         } catch (\Exception $e) {
