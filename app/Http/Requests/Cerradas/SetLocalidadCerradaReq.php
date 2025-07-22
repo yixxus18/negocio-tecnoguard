@@ -3,10 +3,8 @@
 namespace App\Http\Requests\Cerradas;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
 
-class StrCerradaReq extends FormRequest
+class SetLocalidadCerradaReq extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,12 +22,7 @@ class StrCerradaReq extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => 'required|string|unique:cerradas,group_name|max:127|min:5',
-            'description' => 'sometimes|string|max:255|min:10',
-            'jefe_cerrada_id' => 'sometimes|number|exist:users,id',
-            'latitud' => 'required|numeric|between:-90,90',
-            'longitud' => 'required|numeric|between:-180,180',
+            'localidad' => 'required|number|exist:localidades_entradas,id'
         ];
     }
-
 }

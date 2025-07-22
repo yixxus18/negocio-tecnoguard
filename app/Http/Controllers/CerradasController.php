@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cerradas\JefeCerradaReq;
+use App\Http\Requests\Cerradas\SetLocalidadCerradaReq;
 use App\Http\Requests\Cerradas\StrCerradaReq;
 use App\Http\Requests\Cerradas\UpdCerradaReq;
 use App\Models\Cerrada;
@@ -31,7 +32,9 @@ class CerradasController extends Controller
         try {
             $data = $request->validated();
             $cerrada = Cerrada::create([
-                'group_name' => $data['nombre']
+                'group_name' => $data['nombre'],
+                'description' => $data['description'],
+                'jefe_cerrada_id' => $data['jefe_cerrada_id'],
             ]);
 
             $localidad = LocalidadEntrada::create([
@@ -104,23 +107,21 @@ class CerradasController extends Controller
     /**
      * Asociar localidades a una cerrada
      */
-    public function asociarLocalidades(int $cerradaId, Request $request)
+    public function asociarLocalidad(int $id, SetLocalidadCerradaReq $request)
     {
-        $request->validate([
-            'localidades' => 'required|array',
-            'localidades.*' => 'exists:localidades_entradas,id'
-        ]);
+        $data = $request->validated();
 
-        $cerrada = Cerrada::find($cerradaId);
+        $cerrada = Cerrada::find($id);
         if (!$cerrada) {
             return response()->json(['message' => 'Cerrada no encontrada', 'status' => false], 404);
         }
 
         // Asociar localidades sin quitar las existentes
-        $cerrada->localidadesEntradas()->syncWithoutDetaching($request->localidades);
+        $cerrada->localidadesEntradas()->sync($data['localidad']);
 
         return response()->json([
             'message' => 'Localidades asociadas exitosamente',
+            'data' => $cerrada->load('localidadesEntradas'),
             'status' => true
         ]);
     }
@@ -139,6 +140,7 @@ class CerradasController extends Controller
 
         return response()->json([
             'message' => 'Localidad desasociada exitosamente',
+            'data' => $cerrada->load('localidadesEntradas'),
             'status' => true
         ]);
     }
