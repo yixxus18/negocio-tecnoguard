@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\Cerrada;
 use App\Models\FamilyGroup;
+use Log;
+use Illuminate\Support\Str;
 
 class AdminUserController extends Controller
 {
@@ -57,11 +59,10 @@ class AdminUserController extends Controller
                 'cerrada_id' => $request->cerrada_id,
                 'is_active' => true
             ]);
-
-            // Crear usuario con datos mínimos (se completará en el registro)
+            $randomEmail = Str::uuid() . '@temp.com';
             $user = User::create([
                 'name' => 'Pendiente de registro',
-                'email' => 'pendiente@registro.com',
+                'email' => $randomEmail,
                 'password' => Hash::make('temporal123'),
                 'phone' => $request->phone,
                 'role_id' => 4, // Jefe de Familia por defecto
@@ -89,6 +90,7 @@ class AdminUserController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Error creating cerrada: ' . $e->getMessage());
             return response()->json([
                 'error' => 'server_error',
                 'message' => 'Error interno del servidor.',

@@ -108,4 +108,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Cerrada::class, 'guard_id');
     }
+
+    public function cerradasAsBoss(): HasMany
+    {
+        return $this->hasMany(Cerrada::class, 'jefe_cerrads_id');
+    }
 }

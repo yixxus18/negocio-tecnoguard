@@ -25,6 +25,7 @@ class Cerrada extends Model
     protected $casts = [
         'configuration_pay_date' => 'integer',
         'guard_id' => 'integer',
+        
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

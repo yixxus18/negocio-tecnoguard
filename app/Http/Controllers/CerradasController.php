@@ -33,8 +33,10 @@ class CerradasController extends Controller
             $data = $request->validated();
             $cerrada = Cerrada::create([
                 'group_name' => $data['nombre'],
-                'description' => $data['description'],
-                'jefe_cerrada_id' => $data['jefe_cerrada_id'],
+                'description' => $data['description'] ?? null,
+                'jefe_cerrada_id' => $data['jefe_cerrada_id'] ?? null,
+                'guard_id' => $data['guard_id'] ?? null,
+                'configuration_pay_date' => $data['configuration_pay_date'] ?? null,
             ]);
 
             $localidad = LocalidadEntrada::create([
@@ -95,7 +97,7 @@ class CerradasController extends Controller
                 'status' => false
             ], 404);
         }
-        $cerrada->jefe_cerrada_id = $data->user_id;
+        $cerrada->jefe_cerrada_id = $data['user_id'];
         $cerrada->save();
         return response()->json([
             'data' => $cerrada,

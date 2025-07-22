@@ -22,7 +22,7 @@ class JefeCerradaReq extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exist:user,id|integer'
+            'user_id' => 'required|exists:users,id|integer'
         ];
     }
 }

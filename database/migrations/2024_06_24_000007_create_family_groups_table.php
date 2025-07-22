@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('family_groups', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('membership_id');
+            $table->unsignedBigInteger('membership_id')->nullable();
             $table->unsignedBigInteger('cerrada_id');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
