@@ -23,8 +23,8 @@ class UpdCerradaReq extends FormRequest
     {
          return [
             'nombre' => 'sometimes|string|unique:cerradas,group_name|max:127|min:5',
-            'latitud'=> 'sometimes|decimal:8',
-            'longitud'=>'sometimes|decimal:8',
+            'latitud'=> 'sometimes|numeric|between:-90,90',
+            'longitud'=>'sometimes|numeric|between:-180,180',
         ];
     }
 }

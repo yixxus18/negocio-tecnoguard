@@ -19,7 +19,7 @@ class CerradasController extends Controller
      */
     public function index(): JsonResponse
     {
-        return response()->json(['data' => Cerrada::all(), 'message' => 'Lista de cerradas obtenida exitosamente.', 'status' => true]);
+        return response()->json(['data' => Cerrada::all()->load('localidadesEntradas'), 'message' => 'Lista de cerradas obtenida exitosamente.', 'status' => true]);
     }
 
 
@@ -42,7 +42,7 @@ class CerradasController extends Controller
             $cerrada->localidadesEntradas()->attach($localidad->id);
 
             return response()->json([
-                'data' => $cerrada,
+                'data' => $cerrada->load('localidadesEntradas'),
                 'message' => 'Cerrada creada exitosamente',
                 'status' => true
             ], 201);
@@ -73,7 +73,7 @@ class CerradasController extends Controller
     public function update(UpdCerradaReq $request, string $id)
     {
         $data = $request->validated();
-        $cerrada = Cerrada::find($id);
+        $cerrada = Cerrada::find($id)->load('localidadesEntradas');
         if (!$cerrada) {
             return response()->json(['message' => 'La cerrada no fue encontrada', 'status' => false], 404);
         }
@@ -85,7 +85,7 @@ class CerradasController extends Controller
     public function setJefeDeCerrada(int $id, JefeCerradaReq $request)
     {
         $data = $request->validated();
-        $cerrada = Cerrada::find($id);
+        $cerrada = Cerrada::find($id)->load('localidadesEntradas');
         if (!$cerrada) {
             return response()->json([
                 'message' => 'El usuario o la cerrada especificados no existen.',
@@ -94,7 +94,11 @@ class CerradasController extends Controller
         }
         $cerrada->jefe_cerrada_id = $data->user_id;
         $cerrada->save();
-        return response()->json(['data' => $cerrada, 'message' => 'Jefe de cerrada asignado exitosamente a ' . $cerrada->group_name, 'status' => true]);
+        return response()->json([
+            'data' => $cerrada,
+            'message' => 'Jefe de cerrada asignado exitosamente a ' . $cerrada->group_name,
+            'status' => true
+        ]);
     }
 
     /**
