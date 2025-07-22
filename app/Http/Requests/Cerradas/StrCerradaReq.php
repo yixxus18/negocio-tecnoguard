@@ -27,6 +27,7 @@ class StrCerradaReq extends FormRequest
             'nombre' => 'required|string|unique:cerradas,group_name|max:127|min:5',
             'description' => 'sometimes|string|max:255|min:10',
             'jefe_cerrada_id' => 'sometimes|number|exist:users,id',
+            'configuration_pay_date' => 'required|number|exist:configuation_pay_date,id',
             'latitud' => 'required|numeric|between:-90,90',
             'longitud' => 'required|numeric|between:-180,180',
         ];
