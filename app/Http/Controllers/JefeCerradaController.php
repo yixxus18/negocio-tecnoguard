@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\JefeCerrada\AsignarGuardiaReq;
 use App\Models\Cerrada;
 use App\Models\FamilyGroup;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use User;
 
 class JefeCerradaController extends Controller
 {
@@ -19,7 +21,7 @@ class JefeCerradaController extends Controller
         $familias = FamilyGroup::where('cerrada_id', $cerrada->id)->get()->load('users');
         return response()->json([
             'message' => 'Lista de familias de la cerrada obtenida exitosamente',
-            'data' => $familias,    
+            'data' => $familias,
             'status' => true
         ]);
     }
@@ -27,12 +29,44 @@ class JefeCerradaController extends Controller
     /**
      * Asignar guardia a la cerrada
      */
-    public function asignarGuardiaCerrada(Request $request): JsonResponse
+    public function asignarGuardiaCerrada(AsignarGuardiaReq $request, int $cerradaId): JsonResponse
     {
-        // TODO: Implementar lógica para asignar guardia a la cerrada
+        $data = $request->validated();
+        $cerrada = Cerrada::find($cerradaId);
+        if (!$cerrada) {
+            return response()->json([
+                'message' => 'La cerrada no existe!',
+                'status' => false
+            ], 404);
+        }
+        $cerrada->update([
+            'guard_id' => $data['guardia_id'],
+        ]);
         return response()->json([
-            'message' => 'Guardia asignado exitosamente',
-            'data' => []
+            'message' => 'Guardia asignado a la cerrada exitosamente.',
+            'data' => $cerrada->load('assignedGuard'),
+            'status' => true
+        ]);
+    }
+
+    public function desasignarGuardiaCerrada(Request $request, int $userId): JsonResponse
+    {
+        $guardia = User::find($userId);
+        if (!$guardia) {
+            return response()->json([
+                'message' => 'Error: TG-RES-002, El guardia no existe!',
+                'status' => false
+            ], 404);
+        }
+        $jefe_cerrada = $request->user();
+        $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first();
+        $cerrada->update([
+            'guard_id' => null
+        ]);
+        return response()->json([
+            'message' => 'Guardia desasignado de la cerrada exitosamente.',
+            'data' => $cerrada,
+            'status' => true
         ]);
     }
 
@@ -41,10 +75,12 @@ class JefeCerradaController extends Controller
      */
     public function obtenerGuardiasCerrada(Request $request): JsonResponse
     {
-        // TODO: Implementar lógica para obtener guardias de la cerrada
+        $jefe_cerrada = $request->user();
+        $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first()->load('assignedGuard');
         return response()->json([
             'message' => 'Guardias de la cerrada obtenidos exitosamente',
-            'data' => []
+            'data' => $cerrada->flatMap->users,
+            'status' => true
         ]);
     }
 
