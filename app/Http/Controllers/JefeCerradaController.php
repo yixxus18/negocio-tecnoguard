@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cerrada;
+use App\Models\FamilyGroup;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -12,10 +14,13 @@ class JefeCerradaController extends Controller
      */
     public function obtenerFamiliasCerrada(Request $request): JsonResponse
     {
-        // TODO: Implementar lógica para obtener familias de la cerrada
+        $jefe_cerrada = $request->user();
+        $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first();
+        $familias = FamilyGroup::where('cerrada_id', $cerrada->id)->get()->load('users');
         return response()->json([
-            'message' => 'Familias de la cerrada obtenidas exitosamente',
-            'data' => []
+            'message' => 'Lista de familias de la cerrada obtenida exitosamente',
+            'data' => $familias,    
+            'status' => true
         ]);
     }
 

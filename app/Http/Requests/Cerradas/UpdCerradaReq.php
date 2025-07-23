@@ -21,13 +21,13 @@ class UpdCerradaReq extends FormRequest
      */
     public function rules(): array
     {
-         return [
+        return [
             'nombre' => 'sometimes|string|unique:cerradas,group_name|max:127|min:5',
             'description' => 'sometimes|string|max:255|min:10',
             'jefe_cerrada_id' => 'sometimes|number|exist:users,id',
             'configuration_pay_date' => 'sometimes|number|exist:configuation_pay_date,id',
-            'latitud'=> 'sometimes|numeric|between:-90,90',
-            'longitud'=>'sometimes|numeric|between:-180,180',
+            'latitud' => 'sometimes|numeric|between:-90,90',
+            'longitud' => 'sometimes|numeric|between:-180,180',
         ];
     }
 }
