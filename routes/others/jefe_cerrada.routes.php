@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 
 // Rutas del Rol de Jefe de Cerrada
-Route::middleware(['role:1'])->group(function () {
+Route::middleware(['role:2'])->group(function () {
     Route::get('familias', [JefeCerradaController::class, 'obtenerFamiliasCerrada']);
     Route::post('guardias/{cerradaId}', [JefeCerradaController::class, 'asignarGuardiaCerrada']);
     Route::get('guardias', [JefeCerradaController::class, 'obtenerGuardiasCerrada']);
