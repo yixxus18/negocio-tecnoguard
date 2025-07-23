@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\JefeCerrada\AsignarGuardiaReq;
+use App\Http\Requests\JefeCerrada\CrearConfigReq;
 use App\Models\Cerrada;
 use App\Models\ConfigurationPayDate;
 use App\Models\FamilyGroup;
@@ -110,8 +111,53 @@ class JefeCerradaController extends Controller
         }
         return response()->json([
             'message' => 'Configuración obtenida exitosamente!',
-            'data'=> $config,
-            'status'=> true
+            'data' => $config,
+            'status' => true
         ]);
+    }
+
+    public function crearConfigPago(Request $request)
+    {
+        $jefe_cerrada = $request->user();
+        $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)
+            ->whereNull('configuration_pay_date')->first();
+        if (!$cerrada) {
+            return response()->json([
+                'message' => 'Error: TG-CONF-001, La cerrada ya cuenta con una configuración activa',
+                'status' => false
+            ], 401);
+        }
+        $validator = validator($request->all(), [
+            'nombre_configuracion' => 'required|string|min:5|max:127',
+            'fecha_corte' => 'required|integer|min:1|max:31',
+            'pay' => 'required|integer|min:100|max:9999',
+            'tiempo_prorroga' => 'required|integer|min:1|max:3'
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => $validator->errors(),
+                'status' => false
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        $config = ConfigurationPayDate::create([
+            'nombre_configuracion' => $data['nombre_configuracion'],
+            'Fecha_Corte' => $data['fecha_corte'],
+            'pay' => $data['pay'],
+            'tiempo_prorroga' => $data['tiempo_prorroga'],
+        ]);
+
+        $cerrada->update([
+            'configuration_pay_date' => $config->id
+        ]);
+        return response()->json([
+            'message' => 'La configuracion se creo y se asigno a la cerrada correctamente!',
+            'data' => $cerrada->load('configurationPayDate')->load('assignedGuard'),
+            'status' => true
+        ], 201);
+
     }
 }

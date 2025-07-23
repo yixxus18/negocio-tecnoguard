@@ -13,4 +13,5 @@ Route::middleware(['role:1'])->group(function () {
     Route::post('pagos', [JefeCerradaController::class, 'procesarPagoFamilia']);
 
     Route::get('cerrada/config/{configId}', [JefeCerradaController::class, 'obtenerConfigPago']);
+    Route::post('config-pagos', [JefeCerradaController::class,'crearConfigPago']);
 });
