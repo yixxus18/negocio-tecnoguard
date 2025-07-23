@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\JefeCerrada\AsignarGuardiaReq;
 use App\Models\Cerrada;
+use App\Models\ConfigurationPayDate;
 use App\Models\FamilyGroup;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -93,6 +94,24 @@ class JefeCerradaController extends Controller
         return response()->json([
             'message' => 'Pago procesado exitosamente',
             'data' => []
+        ]);
+    }
+
+    public function obtenerConfigPago(Request $request, int $configId): JsonResponse
+    {
+        $jefe_cerrada = $request->user();
+        $config = ConfigurationPayDate::find($configId);
+        $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->where('configuration_pay_date', $configId)->first();
+        if (!$cerrada || !$config) {
+            return response()->json([
+                'message' => 'Error: TG-RES-001, La configuración no pertenece a la cerrada del Jefe de Cerrada o la configuración no existe',
+                'status' => false
+            ], 404);
+        }
+        return response()->json([
+            'message' => 'Configuración obtenida exitosamente!',
+            'data'=> $config,
+            'status'=> true
         ]);
     }
 }
