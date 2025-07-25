@@ -4,7 +4,7 @@ namespace App\Http\Requests\JefeCerrada;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AsignarGuardiaReq extends FormRequest
+class CrearPagoReq extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,7 +22,11 @@ class AsignarGuardiaReq extends FormRequest
     public function rules(): array
     {
         return [
-            'guardia_id' =>'required|integer|exists:users,id',
+            'membership_id' => 'required|integer|exists:memberships,id',
+            'amount' => 'required|integer|min:1',
+            'date_pay' => 'required|date',
+            'ticket' => 'required|file|max:5120|mimes:jpg,png',
+            'status' => 'required|string',
         ];
     }
 }

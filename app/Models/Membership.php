@@ -38,8 +38,8 @@ class Membership extends Model
     /**
      * Relación con grupos familiares
      */
-    public function familyGroups(): HasMany
+    public function familyGroups(): HasOne
     {
-        return $this->hasMany(FamilyGroup::class);
+        return $this->hasOne(FamilyGroup::class);
     }
 }

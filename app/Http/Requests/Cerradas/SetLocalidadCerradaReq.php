@@ -22,7 +22,7 @@ class SetLocalidadCerradaReq extends FormRequest
     public function rules(): array
     {
         return [
-            'localidad' => 'required|number|exist:localidades_entradas,id'
+            'localidad' => 'required|integer|exist:localidades_entradas,id'
         ];
     }
 }

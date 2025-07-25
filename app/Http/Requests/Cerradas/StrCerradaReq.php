@@ -28,7 +28,7 @@ class StrCerradaReq extends FormRequest
             'description' => 'sometimes|string|max:255|min:10',
             'jefe_cerrada_id' => 'sometimes|nullable|integer|exists:users,id',
             'guard_id' => 'sometimes|nullable|integer|exists:users,id',
-            'configuration_pay_date' => 'sometimes|number|exist:configuation_pay_date,id',
+            'configuration_pay_date' => 'sometimes|integer|exist:configuation_pay_date,id',
             'latitud' => 'required|numeric|between:-90,90',
             'longitud' => 'required|numeric|between:-180,180',
         ];

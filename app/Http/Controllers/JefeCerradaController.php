@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\JefeCerrada\AsignarGuardiaReq;
 use App\Http\Requests\JefeCerrada\CrearConfigReq;
+use App\Http\Requests\JefeCerrada\CrearPagoReq;
 use App\Models\Cerrada;
 use App\Models\ConfigurationPayDate;
 use App\Models\FamilyGroup;
+use App\Models\Membership;
+use App\Models\MembershipDetail;
+use App\Services\FileUploadService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use User;
@@ -89,12 +94,40 @@ class JefeCerradaController extends Controller
     /**
      * Procesar pago de familia
      */
-    public function procesarPagoFamilia(Request $request): JsonResponse
+    public function procesarPagoFamilia(CrearPagoReq $request): JsonResponse
     {
-        // TODO: Implementar lógica para procesar pago de familia
+        $data = $request->validated();
+        $jefe_cerrada = $request->user();
+        $membership = Membership::find($data['membership_id'])->load('familyGroups');
+        $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first();
+        if (!$membership->familyGroups || $cerrada->id != $membership->familyGroups->cerrada_id) {
+            return response()->json([
+                'message' => 'Error: TG-RES-004, La familia no existe o no pertenece a su cerrada',
+                'status' => false
+            ]);
+        }
+        $ticket = FileUploadService::uploadFile($data['ticket']);
+        if ($ticket['success'] != true) {
+            return response()->json([
+                'message' => 'Error: TG-SRV-001, Error al querer subir la imagen del ticket',
+                'status' => false,
+                'error' => $ticket['error']
+            ]);
+        }
+        
+        $membership_detail = MembershipDetail::create([
+            'membership_id' => $data['membership_id'],
+            'amount' => $data['amount'],
+            'estatus' => $data['status'],
+            'date_pay' => $data['date_pay'],
+            'ticket' => $ticket['file_name'],
+            'date_finalization' => Carbon::parse($data['date_pay'])->addMonth()->format('Y-m-d'),
+        ]);
+        $membership_detail->ticket_url = $ticket['url'];
         return response()->json([
             'message' => 'Pago procesado exitosamente',
-            'data' => []
+            'data' => $membership_detail,
+            'status'=> true
         ]);
     }
 
