@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\JefeCerrada\AsignarGuardiaReq;
 use App\Http\Requests\JefeCerrada\CrearConfigReq;
 use App\Http\Requests\JefeCerrada\CrearPagoReq;
+use App\Http\Requests\JefeCerrada\UpdConfigReq;
 use App\Models\Cerrada;
 use App\Models\ConfigurationPayDate;
 use App\Models\FamilyGroup;
@@ -114,7 +115,7 @@ class JefeCerradaController extends Controller
                 'error' => $ticket['error']
             ]);
         }
-        
+
         $membership_detail = MembershipDetail::create([
             'membership_id' => $data['membership_id'],
             'amount' => $data['amount'],
@@ -127,7 +128,7 @@ class JefeCerradaController extends Controller
         return response()->json([
             'message' => 'Pago procesado exitosamente',
             'data' => $membership_detail,
-            'status'=> true
+            'status' => true
         ]);
     }
 
@@ -192,5 +193,30 @@ class JefeCerradaController extends Controller
             'status' => true
         ], 201);
 
+    }
+
+    public function updateConfigPago(UpdConfigReq $request, int $configId)
+    {
+        $jefe_cerrada = $request->user();
+        $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first();
+        $config = ConfigurationPayDate::find($configId);
+        if (!$config || $config->id != $cerrada->configuration_pay_date) {
+            return response()->json([
+                'message' => 'Error: TG-RES-001, La configuración no existe o no pertenece a la cerrada asignada al jefe de cerrada',
+                'status' => false
+            ]);
+        }
+        $data = $request->validated();
+        $config->update([
+            'nombre_configuracion' => $data['nombre_configuracion'],
+            'Fecha_Corte' => $data['fecha_corte'],
+            'pay' => $data['pay'],
+            'tiempo_prorroga' => $data['tiempo_prorroga'],
+        ]);
+        return response()->json([
+            'message' => 'La configuracion se actualizo y se asigno a la cerrada correctamente!',
+            'data' => $cerrada->load('configurationPayDate')->load('assignedGuard'),
+            'status' => true
+        ]);
     }
 }
