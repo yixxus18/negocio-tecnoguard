@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\LogToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
@@ -27,4 +28,10 @@ Route::middleware(['auth.api'])->prefix('v1')->group(function () {
     // Rutas públicas autenticadas
     Route::get('/me', [UserController::class, 'me']);
     Route::get('/profile', [UserController::class, 'profile']);
+});
+
+
+Route::get('/probar-mongo', action: function () {
+    LogToken::create(['nombre' => 'Ricardo', 'datos' => ['x' => 1]]);
+    return LogToken::all();
 });

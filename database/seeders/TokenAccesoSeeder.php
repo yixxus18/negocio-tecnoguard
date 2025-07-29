@@ -18,6 +18,7 @@ class TokenAccesoSeeder extends Seeder
 
         for ($i = 1; $i <= 3; $i++) {
             DB::table('tokens_acceso')->insert([
+                'nombre' =>'Token '.$i,
                 'usuario_id' => $users[$i - 1]->id, 
                 'tipo_token' => ($i == 1) ? 'servicio' : (($i == 2) ? 'visita' : 'residente sin acceso'),
                 'fecha_expiracion' => Carbon::now()->addDays(7 + $i),

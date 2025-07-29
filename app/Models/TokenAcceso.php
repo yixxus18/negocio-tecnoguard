@@ -13,6 +13,7 @@ class TokenAcceso extends Model
     protected $table = 'tokens_acceso';
 
     protected $fillable = [
+        'nombre',
         'usuario_id',
         'tipo_token',
         'fecha_expiracion',
