@@ -87,7 +87,7 @@ class JefeCerradaController extends Controller
         $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first()->load('assignedGuard');
         return response()->json([
             'message' => 'Guardias de la cerrada obtenidos exitosamente',
-            'data' => $cerrada->flatMap->users,
+            'data' => $cerrada,
             'status' => true
         ]);
     }
