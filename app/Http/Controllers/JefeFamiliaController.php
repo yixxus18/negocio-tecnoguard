@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\JefeFamilia\AddMiembroReq;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Log;
 
 class JefeFamiliaController extends Controller
 {
@@ -22,13 +25,23 @@ class JefeFamiliaController extends Controller
     /**
      * Agregar miembro de familia
      */
-    public function agregarMiembroFamilia(Request $request): JsonResponse
+    public function agregarMiembroFamilia(AddMiembroReq $request): JsonResponse
     {
-        // TODO: Implementar lógica para agregar miembro de familia
+        $data = $request->validated();
+        $jefe_familia = $request->user();
+        $miembro = User::where('email', $data['email'])->firstOrFail();
+        if (!$miembro) {
+            return response()->json([
+                'message' => 'El miembro no fue encontrado!',
+                'status' => true
+            ], 404);
+        }
+        $miembro->update(['family_id' => $jefe_familia->family_id, 'is_active' => true]);
         return response()->json([
             'message' => 'Miembro de familia agregado exitosamente',
-            'data' => []
-        ], 201);
+            'data' => $miembro,
+            'status' => true
+        ]);
     }
 
     /**
@@ -36,10 +49,13 @@ class JefeFamiliaController extends Controller
      */
     public function obtenerMiembrosFamilia(Request $request): JsonResponse
     {
-        // TODO: Implementar lógica para obtener miembros de familia
+        $jefe_familia = $request->user();
+        $miembros = User::where('family_id', $jefe_familia->family_id)
+            ->whereNot('id', $jefe_familia->id)->get();
         return response()->json([
             'message' => 'Miembros de familia obtenidos exitosamente',
-            'data' => []
+            'data' => $miembros,
+            'status' => true
         ]);
     }
 
@@ -48,10 +64,22 @@ class JefeFamiliaController extends Controller
      */
     public function eliminarMiembroFamilia(Request $request, $member_id): JsonResponse
     {
-        // TODO: Implementar lógica para eliminar miembro de familia
+        $jefe_familia = $request->user();
+        $miembro = User::find($member_id);
+        if ($jefe_familia->family_id != $miembro->family_id) {
+            return response()->json([
+                'message' => 'El miembro no pertenece a su familia!',
+                'status' => false
+            ], 422);
+        }
+        $miembro->update([
+            'family_id' => null,
+            'is_active' => false
+        ]);
         return response()->json([
             'message' => 'Miembro de familia eliminado exitosamente',
-            'data' => ['member_id' => $member_id]
+            'data' => $miembro,
+            'status' => true
         ]);
     }
 

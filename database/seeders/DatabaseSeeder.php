@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             FamilyGroupSeeder::class,
             UserFamilyAssignmentSeeder::class,
             TokenAccesoSeeder::class,
+            
         ]);
     }
 }
