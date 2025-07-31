@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['role:2'])->group(function () {
     Route::get('familias', [JefeCerradaController::class, 'obtenerFamiliasCerrada']);
     Route::post('guardias/{cerradaId}', [JefeCerradaController::class, 'asignarGuardiaCerrada']);
+    Route::delete('guardias/{userId}', [JefeCerradaController::class, 'desasignarGuardiaCerrada']);
     Route::get('guardias', [JefeCerradaController::class, 'obtenerGuardiasCerrada']);
     Route::post('pagos', [JefeCerradaController::class, 'procesarPagoFamilia']);
 

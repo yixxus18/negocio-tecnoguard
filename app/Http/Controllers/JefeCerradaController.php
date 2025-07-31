@@ -15,7 +15,7 @@ use App\Services\FileUploadService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use User;
+use App\Models\User;
 
 class JefeCerradaController extends Controller
 {
