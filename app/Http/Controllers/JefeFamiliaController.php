@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Guardia\CrearTokenReq;
 use App\Http\Requests\JefeFamilia\AddMiembroReq;
+use App\Models\TokenAcceso;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Log;
@@ -13,13 +16,24 @@ class JefeFamiliaController extends Controller
     /**
      * Generar token de acceso
      */
-    public function generarTokenAcceso(Request $request): JsonResponse
+    public function generarTokenAcceso(CrearTokenReq $request): JsonResponse
     {
-        // TODO: Implementar lógica para generar token de acceso
+        $familiar = $request->user();
+        $data = $request->validated();
+        if (!array_key_exists('tipo_token', $data) || !$data['tipo_token']) {
+            $data['tipo_token'] = 'visita';
+        }
+        $code = random_int(100000, 999999);
+        $data['fecha_expiracion'] = Carbon::now('America/Monterrey')->addHours(5)->format('Y-m-d h:i:s');
+        $data['usuario_id'] = $familiar->id;
+        $data['usos'] = 1;
+        $data['valor'] = $code;
+        $token = TokenAcceso::create($data);
         return response()->json([
-            'message' => 'Token de acceso generado exitosamente',
-            'data' => []
-        ], 201);
+            'message' => 'Aceeso creado correctamente!',
+            'data' => $token,
+            'status' => true
+        ]);
     }
 
     /**
