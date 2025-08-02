@@ -192,7 +192,6 @@ class JefeCerradaController extends Controller
             'data' => $cerrada->load('configurationPayDate')->load('assignedGuard'),
             'status' => true
         ], 201);
-
     }
 
     public function updateConfigPago(UpdConfigReq $request, int $configId)
