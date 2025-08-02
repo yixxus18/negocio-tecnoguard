@@ -37,5 +37,30 @@ class AdminUserSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        DB::table('users')->insert([
+            'name' => 'Prueba',
+            'email' => 'bocher1227@gmail.com',
+            'email_verified_at' => now(),
+            'password' => Hash::make('admin123'),
+            'phone' => '5563405387',
+            'is_active' => 1,
+            'role_id' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+
+        DB::table('users')->insert([
+            'name' => 'Prueba',
+            'email' => 'armamdo1080@gmail.com',
+            'email_verified_at' => now(),
+            'password' => Hash::make('admin123'),
+            'phone' => '8711281527',
+            'is_active' => 1,
+            'role_id' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }
