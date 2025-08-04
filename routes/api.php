@@ -1,15 +1,10 @@
 <?php
 
-use App\Models\LogToken;
+use App\Http\Controllers\CameraController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\JefeCerradaController;
-use App\Http\Controllers\GuardiaController;
-use App\Http\Controllers\JefeFamiliaController;
-use App\Http\Controllers\FamiliarController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Http;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,15 +18,18 @@ use App\Http\Controllers\UserController;
 */
 
 
-Route::middleware(['auth.api'])->prefix('v1')->group(function () {
+Route::prefix('v1')->group(function () {
 
     // Rutas públicas autenticadas
-    Route::get('/me', [UserController::class, 'me']);
-    Route::get('/profile', [UserController::class, 'profile']);
+    Route::middleware(['auth.api'])->group(function () {
+        Route::get('/me', [UserController::class, 'me']);
+        Route::get('/profile', [UserController::class, 'profile']);
+    });
+
+    Route::post('imagenes', [CameraController::class, 'imagenes']);
 });
 
 
-Route::get('/probar-mongo', action: function () {
-    LogToken::create(['nombre' => 'Ricardo', 'datos' => ['x' => 1]]);
-    return LogToken::all();
-});
+
+
+
