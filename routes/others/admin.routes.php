@@ -6,11 +6,15 @@ use App\Http\Controllers\CerradasController;
 use Illuminate\Support\Facades\Route;
 
 // Rutas del Rol de Administrador
+
 Route::middleware(['role:1'])->group(function () {
     Route::resource('users', AdminUserController::class)->except(['edit', 'create']);
     Route::resource('config-pagos', AdminController::class)->except(['edit', 'create']);
     Route::resource('cerradas', CerradasController::class)->except(['edit', 'create', 'destroy']);
 
+    Route::post('/crearUsuarioAdministrativo',[AdminController::class, 'crearUsuarioAdministrativo']);
+    Route::get('/dashboardadmin',[AdminUserController::class,'dashboardadmin']);
+     Route::get('/obtenercolaboradores',[AdminUserController::class,'getcolaborators']);
     Route::post('cerradas/{id}/asignar-jefe', [CerradasController::class,'setJefeDeCerrada']);
     Route::post('cerradas/set-localidad/{id}', [CerradasController::class,'asociarLocalidad']);
     Route::post('cerradas/unset-localidad/{cerradaId}/{localidadId}', [CerradasController::class,'desasociarLocalidad']);

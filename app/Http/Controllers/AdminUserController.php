@@ -256,4 +256,41 @@ class AdminUserController extends Controller
             ], 500);
         }
     }
+
+   public function getColaborators(): JsonResponse
+{
+    try {
+       
+        $users = User::whereIn('role_id', [2, 3])
+                     ->with('role')
+                     ->get();
+
+       
+        $data = $users->map(function (User $user) {
+            $cerrada = Cerrada::where('jefe_cerrada_id', $user->id)
+                              ->orWhere('guard_id', $user->id)
+                              ->first();
+
+            return [
+                'user_id'    => $user->id,
+                'role_id'    => $user->role_id,
+                'role_name'  => $user->role->name,
+                'cerrada_id' => $cerrada->id ?? null,
+                'group_name' => $cerrada->group_name ?? null,
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Colaboradores obtenidos exitosamente.',
+            'data'    => $data,
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error en getColaborators: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Error interno del servidor.',
+            'data'    => null,
+        ], 500);
+    }
+}
 }

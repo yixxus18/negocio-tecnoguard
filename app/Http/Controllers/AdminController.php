@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+
 
 class AdminController extends Controller
 {
@@ -58,14 +62,77 @@ class AdminController extends Controller
     /**
      * Crear usuario administrativo
      */
-    public function crearUsuarioAdministrativo(Request $request): JsonResponse
-    {
-        // TODO: Implementar lógica para crear usuario administrativo
+  public function crearUsuarioAdministrativo(Request $request): JsonResponse
+{
+    
+    $validator = Validator::make($request->all(), [
+        'name'     => 'required|string|max:255',
+        'email'    => 'required|email|max:255|unique:users,email',
+        'phone'    => 'required|string|size:10|unique:users,phone',
+        'role_id'  => 'required|integer|exists:roles,id',
+        'password' => [
+            'required',
+            'string',
+            'min:8',
+            'regex:/[A-Z]/',    
+            'regex:/\d/',       
+            'regex:/[#$%]/',   
+        ],
+    ], [
+        'name.required'     => 'El nombre es obligatorio.',
+        'name.string'       => 'El nombre debe ser una cadena de texto.',
+        'name.max'          => 'El nombre no puede exceder los 255 caracteres.',
+        'email.required'    => 'El correo electrónico es obligatorio.',
+        'email.email'       => 'El formato del correo no es válido.',
+        'email.max'         => 'El correo no puede exceder los 255 caracteres.',
+        'email.unique'      => 'El correo ya está registrado.',
+        'phone.required'    => 'El teléfono es obligatorio.',
+        'phone.string'      => 'El teléfono debe ser una cadena de texto.',
+        'phone.size'        => 'El teléfono debe tener exactamente 10 dígitos.',
+        'phone.unique'      => 'El teléfono ya está registrado.',
+        'role_id.required'  => 'El role_id es obligatorio.',
+        'role_id.integer'   => 'El role_id debe ser un número entero.',
+        'role_id.exists'    => 'El role_id especificado no existe.',
+        'password.required' => 'La contraseña es obligatoria.',
+        'password.min'      => 'La contraseña debe tener al menos 8 caracteres.',
+        'password.regex'    => 'La contraseña debe contener al menos una mayúscula, un número y un carácter especial (#, $, %).',
+    ]);
+
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Usuario administrativo creado exitosamente',
-            'data' => []
-        ], 201);
+            'error'   => 'validation_failed',
+            'message' => 'Los datos proporcionados no son válidos.',
+            'data'    => ['errors' => $validator->errors()],
+            'status'  => false,
+        ], 422);
     }
+
+    
+    $user = User::create([
+        'name'              => $request->input('name'),
+        'email'             => $request->input('email'),
+        'phone'             => $request->input('phone'),
+        'role_id'           => $request->input('role_id'),
+        'password'          => Hash::make($request->input('password')),
+        'is_active'         => true,
+        'email_verified_at' => now(),
+    ]);
+
+    
+    return response()->json([
+        'message' => 'Usuario administrativo creado exitosamente.',
+        'data'    => [
+            'id'       => $user->id,
+            'name'     => $user->name,
+            'email'    => $user->email,
+            'phone'    => $user->phone,
+            'role_id'  => $user->role_id,
+        ],
+        'status'  => true,
+    ], 201);
+}
+
+
 
     /**
      * Obtener detalles de un usuario
