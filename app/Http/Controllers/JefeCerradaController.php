@@ -26,6 +26,12 @@ class JefeCerradaController extends Controller
     {
         $jefe_cerrada = $request->user();
         $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first();
+        if(!$cerrada){
+            return response()->json([
+                'message' => 'No tiene una cerrada asignada!',
+                'status' => false
+            ], 404);
+        }
         $familias = FamilyGroup::where('cerrada_id', $cerrada->id)->get()->load('users');
         return response()->json([
             'message' => 'Lista de familias de la cerrada obtenida exitosamente',
@@ -85,6 +91,12 @@ class JefeCerradaController extends Controller
     {
         $jefe_cerrada = $request->user();
         $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first()->load('assignedGuard');
+        if(!$cerrada){
+            return response()->json([
+                'message' => 'No tiene una cerrada asignada!',
+                'status' => false
+            ], 404);
+        }
         return response()->json([
             'message' => 'Guardias de la cerrada obtenidos exitosamente',
             'data' => $cerrada,
@@ -101,6 +113,12 @@ class JefeCerradaController extends Controller
         $jefe_cerrada = $request->user();
         $membership = Membership::find($data['membership_id'])->load('familyGroups');
         $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first();
+        if(!$cerrada){
+            return response()->json([
+                'message' => 'No tiene una cerrada asignada!',
+                'status' => false
+            ], 404);
+        };
         if (!$membership->familyGroups || $cerrada->id != $membership->familyGroups->cerrada_id) {
             return response()->json([
                 'message' => 'Error: TG-RES-004, La familia no existe o no pertenece a su cerrada',
@@ -137,6 +155,7 @@ class JefeCerradaController extends Controller
         $jefe_cerrada = $request->user();
         $config = ConfigurationPayDate::find($configId);
         $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->where('configuration_pay_date', $configId)->first();
+        
         if (!$cerrada || !$config) {
             return response()->json([
                 'message' => 'Error: TG-RES-001, La configuración no pertenece a la cerrada del Jefe de Cerrada o la configuración no existe',
@@ -198,6 +217,7 @@ class JefeCerradaController extends Controller
     {
         $jefe_cerrada = $request->user();
         $cerrada = Cerrada::where('jefe_cerrada_id', $jefe_cerrada->id)->first();
+        
         $config = ConfigurationPayDate::find($configId);
         if (!$config || $config->id != $cerrada->configuration_pay_date) {
             return response()->json([
