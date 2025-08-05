@@ -272,6 +272,7 @@ class AdminUserController extends Controller
                               ->first();
 
             return [
+                'user_name'=> $user->name,
                 'user_id'    => $user->id,
                 'role_id'    => $user->role_id,
                 'role_name'  => $user->role->name,
@@ -293,4 +294,7 @@ class AdminUserController extends Controller
         ], 500);
     }
 }
+
+
+
 }

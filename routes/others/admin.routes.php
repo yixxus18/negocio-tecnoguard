@@ -12,6 +12,7 @@ Route::middleware(['role:1'])->group(function () {
     Route::resource('config-pagos', AdminController::class)->except(['edit', 'create']);
     Route::resource('cerradas', CerradasController::class)->except(['edit', 'create', 'destroy']);
 
+    Route::get('/getEarningsByCerrada',[AdminController::class,'getEarningsByCerrada']);
     Route::post('/crearUsuarioAdministrativo',[AdminController::class, 'crearUsuarioAdministrativo']);
     Route::get('/dashboardadmin',[AdminUserController::class,'dashboardadmin']);
      Route::get('/obtenercolaboradores',[AdminUserController::class,'getcolaborators']);

@@ -7,6 +7,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\MembershipDetail;
+use Carbon\Carbon;
 
 
 class AdminController extends Controller
@@ -132,6 +134,68 @@ class AdminController extends Controller
     ], 201);
 }
 
+
+public function getEarningsByCerrada(Request $request): JsonResponse
+    {
+        // 1) Validar fechas
+        $validator = Validator::make($request->all(), [
+            'start_date' => ['required', 'date'],
+            'end_date'   => ['required', 'date', 'after_or_equal:start_date'],
+        ], [
+            'start_date.required'     => 'La fecha de inicio es obligatoria.',
+            'start_date.date'         => 'La fecha de inicio no es válida.',
+            'end_date.required'       => 'La fecha de fin es obligatoria.',
+            'end_date.date'           => 'La fecha de fin no es válida.',
+            'end_date.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la de inicio.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error'   => 'validation_failed',
+                'message' => 'Rango de fechas inválido.',
+                'data'    => ['errors' => $validator->errors()],
+                'status'  => false,
+            ], 422);
+        }
+
+        // 2) Expandir límites de día completo con Carbon
+        $start = Carbon::parse($request->input('start_date'))->startOfDay();
+        $end   = Carbon::parse($request->input('end_date'))->endOfDay();
+
+        // 3) Cargar detalles con relaciones membership -> familyGroups -> cerrada
+        $details = MembershipDetail::with('membership.familyGroups.cerrada')
+            ->whereBetween('date_pay', [$start, $end])
+            ->get()
+            // filtramos aquellos que no tengan ninguna relación válida
+            ->filter(fn($d) =>
+                $d->membership
+                    && $d->membership->familyGroups
+                    && $d->membership->familyGroups->cerrada
+            );
+
+        // 4) Agrupar por cerrada y calcular sumas
+        $stats = $details
+            ->groupBy(fn($d) => $d->membership->familyGroups->cerrada->id)
+            ->map(function($group, $cerradaId) {
+                $cerrada = $group->first()->membership->familyGroups->cerrada;
+                return [
+                    'id_cerrada'      => $cerradaId,
+                    'nombre_cerrada'  => $cerrada->group_name,
+                    'montogenerado'   => $group->sum('amount'),
+                    'pagosaprobados'  => $group->where('estatus', 'validado')->sum('amount'),
+                    'pagosrechazados' => $group->where('estatus', 'revision')->sum('amount'),
+                    'pagospendientes' => $group->where('estatus', 'pendiente')->sum('amount'),
+                ];
+            })
+            ->values();  // reindexar colección
+
+        // 5) Devolver respuesta
+        return response()->json([
+            'message' => 'Ganancias por cerrada obtenidas correctamente.',
+            'data'    => $stats,
+            'status'  => true,
+        ], 200);
+    }
 
 
     /**

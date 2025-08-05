@@ -9,7 +9,6 @@ use App\Models\Membership;
 use App\Models\MembershipDetail;
 use App\Models\TokenAcceso;
 use App\Models\User;
-use App\Services\FileUploadService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -118,7 +117,9 @@ class JefeFamiliaController extends Controller
      */
     public function obtenerHistorialMembresia(Request $request): JsonResponse
     {
-        // TODO: Implementar lógica para obtener historial de membresía
+
+        $autenticado=Auth::user();
+        $user=User::where('id',$autenticado->id)->get();
         return response()->json([
             'message' => 'Historial de membresía obtenido exitosamente',
             'data' => []
