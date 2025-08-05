@@ -17,6 +17,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\User;
+<<<<<<< Updated upstream
+=======
+use Psy\Readline\Hoa\Console;
+>>>>>>> Stashed changes
 use Log;
 
 class JefeCerradaController extends Controller
@@ -35,11 +39,18 @@ class JefeCerradaController extends Controller
             ], 404);
         }
         $familias = FamilyGroup::where('cerrada_id', $cerrada->id)->get()->load('users');
+        Log::info($familias);
         return response()->json([
+            
             'message' => 'Lista de familias de la cerrada obtenida exitosamente',
             'data' => $familias,
             'status' => true
         ]);
+    }
+
+    public function obtenerpagosdemicerrada(Request $request)
+    {
+        
     }
 
     /**
