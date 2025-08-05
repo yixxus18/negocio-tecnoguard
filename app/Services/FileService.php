@@ -5,9 +5,10 @@ namespace App\Services;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Log;
 
 
-class FileUploadService
+class FileService
 {
 
     public static function uploadFile(UploadedFile $file, string $path = 'tickets'): array
@@ -20,7 +21,7 @@ class FileUploadService
             $fullPath = $path . '/' . $fileName;
 
             // Subir archivo
-            $uploadedPath = Storage::disk('s3')->putFileAs($path, $file, $fileName);
+            $uploadedPath = Storage::disk('spaces')->putFileAs($path, $file, $fileName);
             $url = Storage::disk('spaces')->temporaryUrl(
                 $fullPath,
                 now()->addMinutes(10)
@@ -51,9 +52,17 @@ class FileUploadService
         return time() . '_' . uniqid() . '.' . $extension;
     }
 
-    public static function getImageURL($name, $path = 'tickets'){
-        try{
-
+    public static function getImageURL($name, $path = 'tickets')
+    {
+        try {
+            $url = Storage::disk('spaces')->temporaryUrl(
+                $path. '/' . $name ,
+                now()->addMinutes(10)
+            );
+            return $url;
+        } catch (Exception $e) {
+            Log::error($e);
+            return false;
         }
     }
 

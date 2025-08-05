@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\CameraController;
+use App\Services\FileService;
+use App\Services\FileUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -28,8 +30,5 @@ Route::prefix('v1')->group(function () {
 
     Route::post('imagenes', [CameraController::class, 'imagenes']);
 });
-
-
-
 
 
