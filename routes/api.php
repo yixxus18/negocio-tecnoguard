@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CameraController;
+use App\Http\Controllers\PuertasController;
 use App\Services\FileService;
 use App\Services\FileUploadService;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth.api'])->group(function () {
         Route::get('/me', [UserController::class, 'me']);
         Route::get('/profile', [UserController::class, 'profile']);
+        Route::post('puerta', [PuertasController::class, 'openDoor']);
     });
 
     Route::post('imagenes', [CameraController::class, 'imagenes']);

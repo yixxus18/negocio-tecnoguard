@@ -16,4 +16,4 @@ Route::middleware(['role:4'])->group(function () {
 
 });
 
-Route::middleware('role:[4,5]')->post('token', [JefeFamiliaController::class, 'generarTokenAcceso']);
+Route::middleware('role:4,5')->post('token', [JefeFamiliaController::class, 'generarTokenAcceso']);
