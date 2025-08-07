@@ -9,6 +9,7 @@ use App\Models\Membership;
 use App\Models\MembershipDetail;
 use App\Models\TokenAcceso;
 use App\Models\User;
+use App\Services\FileService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -16,28 +17,7 @@ use Log;
 
 class JefeFamiliaController extends Controller
 {
-    /**
-     * Generar token de acceso
-     */
-    public function generarTokenAcceso(CrearTokenReq $request): JsonResponse
-    {
-        $familiar = $request->user();
-        $data = $request->validated();
-        if (!array_key_exists('tipo_token', $data) || !$data['tipo_token']) {
-            $data['tipo_token'] = 'visita';
-        }
-        $code = random_int(100000, 999999);
-        $data['fecha_expiracion'] = Carbon::now('America/Monterrey')->addHours(5)->format('Y-m-d h:i:s');
-        $data['usuario_id'] = $familiar->id;
-        $data['usos'] = 1;
-        $data['valor'] = $code;
-        $token = TokenAcceso::create($data);
-        return response()->json([
-            'message' => 'Aceeso creado correctamente!',
-            'data' => $token,
-            'status' => true
-        ]);
-    }
+    
 
     /**
      * Agregar miembro de familia
@@ -138,7 +118,7 @@ class JefeFamiliaController extends Controller
                 'status' => false
             ]);
         }
-        $ticket = FileUploadService::uploadFile($data['ticket']);
+        $ticket = FileService::uploadFile($data['ticket']);
         if ($ticket['success'] != true) {
             return response()->json([
                 'message' => 'Error: TG-SRV-001, Error al querer subir la imagen del ticket',
