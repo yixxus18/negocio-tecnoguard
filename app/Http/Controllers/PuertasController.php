@@ -14,7 +14,6 @@ class PuertasController extends Controller
         $data = $request->input('data');
         $user = $request->user();
         $family = FamilyGroup::find($user->family_id);
-        Log::info($family);
         event(new AbrirPuerta($family->cerrada_id.$data));
         return response()->json([
             'message' => 'Puerta abierta!',
