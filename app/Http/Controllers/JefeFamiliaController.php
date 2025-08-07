@@ -26,6 +26,14 @@ class JefeFamiliaController extends Controller
     {
         $data = $request->validated();
         $jefe_familia = $request->user();
+        $family_members_count = User::where('family_id', $jefe_familia->family_id)->count();
+
+        if ($family_members_count >= 4) {
+            return response()->json([
+                'message' => 'Ha alcanzado el límite de 3 miembros por familia.',
+                'status' => false
+            ], 422);
+        }
         $miembro = User::where('email', $data['email'])->firstOrFail();
         if (!$miembro) {
             return response()->json([
