@@ -61,4 +61,8 @@ class Cerrada extends Model
     {
         return $this->belongsToMany(LocalidadEntrada::class, 'entrada_cerradas', 'cerrada_id', 'entrada_id');
     }
+   public function catalogoDispositivos(): HasMany
+    {
+        return $this->hasMany(CatalogoDispositivo::class, 'cerrada_id');
+    }
 }

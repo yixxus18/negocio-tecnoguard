@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\JefeCerrada\AsignarGuardiaReq;
 use App\Http\Requests\JefeCerrada\CrearConfigReq;
 use App\Http\Requests\JefeCerrada\CrearPagoReq;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\JefeCerrada\UpdConfigReq;
 use App\Models\Cerrada;
 use App\Models\ConfigurationPayDate;
@@ -17,10 +18,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\User;
-<<<<<<< Updated upstream
-=======
-use Psy\Readline\Hoa\Console;
->>>>>>> Stashed changes
 use Log;
 
 class JefeCerradaController extends Controller
@@ -48,9 +45,81 @@ class JefeCerradaController extends Controller
         ]);
     }
 
-    public function obtenerpagosdemicerrada(Request $request)
+     public function obtenerpagosdemicerrada(Request $request): JsonResponse
     {
-        
+        // validar fechas
+        $v = Validator::make($request->all(), [
+            'initial_date' => 'required|date_format:Y-m-d',
+            'final_date'   => 'required|date_format:Y-m-d|after_or_equal:initial_date',
+        ], [
+            'initial_date.required' => 'La fecha inicial es obligatoria.',
+            'initial_date.date_format' => 'La fecha inicial debe tener formato AAAA-MM-DD.',
+            'final_date.required' => 'La fecha final es obligatoria.',
+            'final_date.date_format' => 'La fecha final debe tener formato AAAA-MM-DD.',
+            'final_date.after_or_equal' => 'La fecha final debe ser igual o posterior a la inicial.',
+        ]);
+
+        if ($v->fails()) {
+            return response()->json([
+                'error'   => 'validation_failed',
+                'message' => 'Los datos proporcionados no son válidos.',
+                'data'    => ['errors' => $v->errors()],
+                'status'  => false,
+            ], 422);
+        }
+
+        try {
+            $user = $request->user(); 
+            
+            if ($user->role_id === 2) {
+                $cerrada = Cerrada::where('jefe_cerrada_id', $user->id)->first();
+            } elseif ($user->role_id === 3) {
+                $cerrada = Cerrada::where('guard_id', $user->id)->first();
+            } else {
+                return response()->json([
+                    'error'   => 'forbidden',
+                    'message' => 'No tienes permiso para ver los pagos de esta cerrada.',
+                    'data'    => null,
+                    'status'  => false,
+                ], 403);
+            }
+
+            if (! $cerrada) {
+                return response()->json([
+                    'error'   => 'forbidden',
+                    'message' => 'No perteneces a ninguna cerrada válida.',
+                    'data'    => null,
+                    'status'  => false,
+                ], 403);
+            }
+
+            
+            $membershipIds = FamilyGroup::where('cerrada_id', $cerrada->id)
+                ->pluck('membership_id');
+
+            
+            $details = MembershipDetail::whereIn('membership_id', $membershipIds)
+                ->whereBetween('date_pay', [
+                    $request->input('initial_date'),
+                    $request->input('final_date'),
+                ])
+                ->get();
+
+            return response()->json([
+                'message' => 'Pagos de la cerrada obtenidos correctamente.',
+                'data'    => $details,
+                'status'  => true,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error obtenerpagosdemicerrada: ' . $e->getMessage());
+            return response()->json([
+                'error'   => 'internal_server_error',
+                'message' => 'Ocurrió un error inesperado al obtener los pagos.',
+                'data'    => null,
+                'status'  => false,
+            ], 500);
+        }
     }
 
     /**
@@ -253,20 +322,37 @@ class JefeCerradaController extends Controller
         ]);
     }
 
-    public function obtenerGuardiasDisponibles()
+   public function obtenerGuardiasDisponibles(): JsonResponse
     {
-        $guardias = User::where('role_id', 3)->get();
-        $guardias->load('cerradasAsGuard');
-        $guardias_libres = array_filter($guardias->toArray(), function($guardia){
-            Log::info($guardia);
-            if(count($guardia['cerradas_as_guard']) == 0){
-                return $guardia;
-            }
+       
+        $guardias = User::where('role_id', 3)
+            ->with('cerradasAsGuard:id,group_name,guard_id')
+            ->get(['id', 'name']);
+
+        if ($guardias->isEmpty()) {
+            return response()->json([
+                'message' => 'No se encontraron guardias',
+                'data'    => [],
+                'status'  => false,
+            ], 404);
+        }
+
+        $resultado = $guardias->map(function ($guard) {
+            $tieneCerrada  = $guard->cerradasAsGuard->isNotEmpty();
+            $nombreCerrada = $guard->cerradasAsGuard->first()->group_name ?? null;
+
+            return [
+                'id'             => $guard->id,
+                'nombre'         => $guard->name,
+                'nombre_cerrada' => $nombreCerrada,
+                'ocupado'        => $tieneCerrada,
+            ];
         });
+
         return response()->json([
-            'message' => 'Guardias libres!',
-            'data' => $guardias_libres,
-            'status' => true
-        ]);
+            'message' => 'Guardias obtenidos correctamente',
+            'data'    => $resultado,
+            'status'  => true,
+        ],200);
     }
 }

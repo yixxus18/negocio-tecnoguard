@@ -27,42 +27,73 @@ class CerradasController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StrCerradaReq $request)
+     public function store(Request $request): JsonResponse
     {
-        try {
-            $data = $request->validated();
-            $cerrada = Cerrada::create([
-                'group_name' => $data['nombre'],
-                'description' => $data['description'] ?? null,
-                'jefe_cerrada_id' => $data['jefe_cerrada_id'] ?? null,
-                'guard_id' => $data['guard_id'] ?? null,
-                'configuration_pay_date' => $data['configuration_pay_date'] ?? null,
-            ]);
+        
+        $validated = $request->validate([
+            'nombre'                  => 'required|string|unique:cerradas,group_name|min:5|max:127',
+            'description'             => 'required|string|min:10|max:255',
+            'jefe_cerrada_id'         => 'required|integer|exists:users,id',
+            'guard_id'                => 'sometimes|nullable|integer|exists:users,id',
+            'configuration_pay_date'  => 'required|integer|exists:configuration_pay_dates,id',
+            'latitud'                 => 'required|numeric|between:-90,90',
+            'longitud'                => 'required|numeric|between:-180,180',
+        ], [
+            'nombre.required'                 => 'El nombre de la cerrada es obligatorio.',
+            'nombre.string'                   => 'El nombre debe ser una cadena de texto.',
+            'nombre.unique'                   => 'El nombre de la cerrada ya está en uso.',
+            'nombre.min'                      => 'El nombre debe tener al menos :min caracteres.',
+            'nombre.max'                      => 'El nombre no puede exceder de :max caracteres.',
 
-            $localidad = LocalidadEntrada::create([
-                'latitud' => $data['latitud'],
-                'longitud' => $data['longitud']
-            ]);
+            'description.required'            => 'La descripción es obligatoria.',
+            'description.string'              => 'La descripción debe ser una cadena de texto.',
+            'description.min'                 => 'La descripción debe tener al menos :min caracteres.',
+            'description.max'                 => 'La descripción no puede exceder de :max caracteres.',
 
-            $cerrada->localidadesEntradas()->attach($localidad->id);
+            'jefe_cerrada_id.required'        => 'El campo jefe de cerrada es obligatorio.',
+            'jefe_cerrada_id.integer'         => 'El jefe de cerrada debe ser un identificador numérico.',
+            'jefe_cerrada_id.exists'          => 'El jefe de cerrada seleccionado no existe.',
 
-            return response()->json([
-                'data' => $cerrada->load('localidadesEntradas'),
-                'message' => 'Cerrada creada exitosamente',
-                'status' => true
-            ], 201);
+            'guard_id.integer'                => 'El guardia asignado debe ser un identificador numérico.',
+            'guard_id.exists'                 => 'El guardia asignado no existe.',
 
-        } catch (\Exception $e) {
-            Log::error('Error creating cerrada: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            'configuration_pay_date.required' => 'La configuración de fecha de pago es obligatoria.',
+            'configuration_pay_date.integer'  => 'La configuración de fecha de pago debe ser un identificador numérico.',
+            'configuration_pay_date.exists'   => 'La configuración de fecha de pago seleccionada no existe.',
 
-            return response()->json([
-                'message' => 'Error interno del servidor: ' . $e->getMessage(),
-                'status' => false
-            ], 500);
-        }
+            'latitud.required'                => 'La latitud es obligatoria.',
+            'latitud.numeric'                 => 'La latitud debe ser un valor numérico.',
+            'latitud.between'                 => 'La latitud debe estar entre :min y :max.',
+
+            'longitud.required'               => 'La longitud es obligatoria.',
+            'longitud.numeric'                => 'La longitud debe ser un valor numérico.',
+            'longitud.between'                => 'La longitud debe estar entre :min y :max.',
+        ]);
+
+        
+        $cerrada = Cerrada::create([
+            'group_name'             => $validated['nombre'],
+            'description'            => $validated['description']             ?? null,
+            'jefe_cerrada_id'        => $validated['jefe_cerrada_id']        ?? null,
+            'guard_id'               => $validated['guard_id']               ?? null,
+            'configuration_pay_date' => $validated['configuration_pay_date'] ?? null,
+        ]);
+
+        
+        $localidad = LocalidadEntrada::create([
+            'latitud'  => $validated['latitud'],
+            'longitud' => $validated['longitud'],
+        ]);
+
+        $cerrada->localidadesEntradas()->attach($localidad->id);
+
+       
+        return response()->json([
+            'data'    => $cerrada->load('localidadesEntradas'),
+            'message' => 'Cerrada creada exitosamente',
+            'status'  => true,
+        ], 201);
     }
-
     /**
      * Display the specified resource.
      */

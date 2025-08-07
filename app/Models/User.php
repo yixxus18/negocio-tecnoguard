@@ -114,4 +114,8 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Cerrada::class, 'jefe_cerrads_id');
     }
+     public function catalogoDispositivos(): HasMany
+    {
+        return $this->hasMany(CatalogoDispositivo::class, 'tecnico_id');
+    }
 }

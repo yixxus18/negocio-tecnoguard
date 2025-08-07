@@ -198,6 +198,41 @@ public function getEarningsByCerrada(Request $request): JsonResponse
     }
 
 
+
+     public function obtenerGuardiasDisponibles(): JsonResponse
+    {
+       
+        $guardias = User::where('role_id', 3)
+            ->with('cerradasAsGuard:id,group_name,guard_id')
+            ->get(['id', 'name']);
+
+        if ($guardias->isEmpty()) {
+            return response()->json([
+                'message' => 'No se encontraron guardias',
+                'data'    => [],
+                'status'  => false,
+            ], 404);
+        }
+
+        $resultado = $guardias->map(function ($guard) {
+            $tieneCerrada  = $guard->cerradasAsGuard->isNotEmpty();
+            $nombreCerrada = $guard->cerradasAsGuard->first()->group_name ?? null;
+
+            return [
+                'id'             => $guard->id,
+                'nombre'         => $guard->name,
+                'nombre_cerrada' => $nombreCerrada,
+                'ocupado'        => $tieneCerrada,
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Guardias obtenidos correctamente',
+            'data'    => $resultado,
+            'status'  => true,
+        ],200);
+    }
+
     /**
      * Obtener detalles de un usuario
      */
