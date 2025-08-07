@@ -21,9 +21,20 @@ class UserController extends Controller
             ], 401);
         }
 
+        if (in_array($user->role_id, [4, 5])) {
+            $membershipIsActive = $user->familyGroup->membership->is_active ?? false;
+            $user->membership_is_active = $membershipIsActive;
+            return response()->json([
+                'message' => 'Información del usuario obtenida exitosamente',
+                'data' => $user,
+                'status' => true,
+            ]);
+        }
+
         return response()->json([
             'message' => 'Información del usuario obtenida exitosamente',
-            'data' => $user
+            'data' => $user,
+            'status' => true,
         ]);
     }
 
