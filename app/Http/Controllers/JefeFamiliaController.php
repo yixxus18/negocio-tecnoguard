@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Guardia\CrearTokenReq;
+use App\Http\Requests\JefeCerrada\CrearPagoReq;
 use App\Http\Requests\JefeFamilia\AddMiembroReq;
+use App\Models\Membership;
+use App\Models\MembershipDetail;
 use App\Models\TokenAcceso;
 use App\Models\User;
-use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -121,6 +123,43 @@ class JefeFamiliaController extends Controller
         return response()->json([
             'message' => 'Historial de membresía obtenido exitosamente',
             'data' => []
+        ]);
+    }
+
+    public function procesarPagoFamilia(CrearPagoReq $request): JsonResponse
+    {
+        $data = $request->validated();
+        $jefe_cerrada = $request->user();
+        $membership = Membership::find($data['membership_id'])->load('familyGroups');
+        
+        if (!$membership->familyGroups) {
+            return response()->json([
+                'message' => 'Error: TG-RES-004, La familia no existe o no pertenece a su cerrada',
+                'status' => false
+            ]);
+        }
+        $ticket = FileUploadService::uploadFile($data['ticket']);
+        if ($ticket['success'] != true) {
+            return response()->json([
+                'message' => 'Error: TG-SRV-001, Error al querer subir la imagen del ticket',
+                'status' => false,
+                'error' => $ticket['error']
+            ]);
+        }
+
+        $membership_detail = MembershipDetail::create([
+            'membership_id' => $data['membership_id'],
+            'amount' => $data['amount'],
+            'estatus' => $data['status'],
+            'date_pay' => $data['date_pay'],
+            'ticket' => $ticket['file_name'],
+            'date_finalization' => Carbon::parse($data['date_pay'])->addMonth()->format('Y-m-d'),
+        ]);
+        $membership_detail->ticket_url = $ticket['url'];
+        return response()->json([
+            'message' => 'Pago procesado exitosamente',
+            'data' => $membership_detail,
+            'status' => true
         ]);
     }
 }

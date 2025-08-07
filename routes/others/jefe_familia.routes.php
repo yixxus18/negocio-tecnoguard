@@ -12,6 +12,8 @@ Route::middleware(['role:4'])->group(function () {
     Route::delete('family-members/{member_id}', [JefeFamiliaController::class, 'eliminarMiembroFamilia']);
     Route::get('account-status', [JefeFamiliaController::class, 'consultarSaldoEstado']);
     Route::get('my-family/membership', [JefeFamiliaController::class, 'obtenerHistorialMembresia']);
+    Route::post('pagos', [JefeFamiliaController::class, 'procesarPagoFamilia']);
+
 });
 
-Route::middleware('role:[4,5]')->post('token', [JefeFamiliaController::class, 'generarTokenAcceso']);
+Route::middleware('role:4,5')->post('token', [JefeFamiliaController::class, 'generarTokenAcceso']);

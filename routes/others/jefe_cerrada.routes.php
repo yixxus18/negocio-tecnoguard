@@ -15,7 +15,6 @@ Route::middleware(['role:2'])->group(function () {
     // Route::get('guardias-libres', [JefeCerradaController::class, 'obtenerGuardiasDisponibles']);
     Route::delete('guardias/{userId}', [JefeCerradaController::class, 'desasignarGuardiaCerrada']);
     Route::get('guardias', [JefeCerradaController::class, 'obtenerGuardiasCerrada']);
-    Route::post('pagos', [JefeCerradaController::class, 'procesarPagoFamilia']);
 
     Route::get('cerrada/config/{configId}', [JefeCerradaController::class, 'obtenerConfigPago']);
     Route::post('config-pagos', [JefeCerradaController::class,'crearConfigPago']);

@@ -25,7 +25,7 @@ class CrearPagoReq extends FormRequest
             'membership_id' => 'required|integer|exists:memberships,id',
             'amount' => 'required|integer|min:1',
             'date_pay' => 'required|date',
-            'ticket' => 'required|file|max:5120|mimes:jpg,png',
+            'ticket' => 'sometimes|file|max:5120|mimes:jpg,png',
             'status' => 'required|string',
         ];
     }
