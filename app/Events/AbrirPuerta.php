@@ -30,7 +30,7 @@ class AbrirPuerta implements ShouldBroadcast
      */
     public function broadcastOn(): Channel
     {
-        return new Channel('puerta');
+        return new Channel('puerta.'.$this->cerradaId);
     }
 
     public function broadcastAs()
