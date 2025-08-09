@@ -20,7 +20,7 @@ class UserController extends Controller
                 'error' => 'UNAUTHENTICATED'
             ], 401);
         }
-
+        $user->load(['role', 'familyGroup.cerrada']);
         if (in_array($user->role_id, [4, 5])) {
             $membershipIsActive = $user->familyGroup->membership->is_active ?? false;
             $user->membership_is_active = $membershipIsActive;
@@ -53,7 +53,7 @@ class UserController extends Controller
         }
 
         // Buscar el usuario en la base de datos local usando el ID del usuario autenticado
-        $user = \App\Models\User::with(['role', 'familyGroup'])
+        $user = \App\Models\User::with(['role', 'familyGroup.cerrada'])
             ->where('email', $authUser['email'])
             ->first();
 
@@ -68,8 +68,6 @@ class UserController extends Controller
             'message' => 'Perfil del usuario obtenido exitosamente',
             'data' => [
                 'user' => $user,
-                'role' => $user->role,
-                'family_group' => $user->familyGroup
             ]
         ]);
     }
