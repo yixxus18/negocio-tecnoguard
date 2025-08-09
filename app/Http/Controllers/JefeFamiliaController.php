@@ -55,7 +55,7 @@ class JefeFamiliaController extends Controller
     public function obtenerMiembrosFamilia(Request $request): JsonResponse
     {
         $jefe_familia = $request->user();
-        $miembros = User::where('family_id', $jefe_familia->family_id)
+        $miembros = User::whereNotNull('family_id')->where('family_id', $jefe_familia->family_id)
             ->whereNot('id', $jefe_familia->id)->get();
         return response()->json([
             'message' => 'Miembros de familia obtenidos exitosamente',
