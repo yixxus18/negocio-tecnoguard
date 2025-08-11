@@ -21,12 +21,13 @@ class AdminUserController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            // Validar datos de entrada
+          
             $validator = Validator::make($request->all(), [
-                'phone' => 'required|string|max:15|unique:users,phone',
+                'phone' => 'required|string|max:10|unique:users,phone',
                 'cerrada_id' => 'required|integer|exists:cerradas,id'
             ], [
                 'phone.required' => 'El teléfono es obligatorio.',
+                'phone.max' => 'El teléfono es de  maximo 10 digitos .',
                 'phone.unique' => 'El teléfono ya está registrado.',
                 'cerrada_id.required' => 'La cerrada es obligatoria.',
                 'cerrada_id.exists' => 'La cerrada especificada no existe.'
@@ -43,7 +44,6 @@ class AdminUserController extends Controller
                 ], 422);
             }
 
-            // Verificar que la cerrada existe
             $cerrada = Cerrada::find($request->cerrada_id);
             if (!$cerrada) {
                 return response()->json([
@@ -54,7 +54,6 @@ class AdminUserController extends Controller
                 ], 404);
             }
 
-            // Crear grupo familiar
             $familyGroup = FamilyGroup::create([
                 'cerrada_id' => $request->cerrada_id,
                 'is_active' => true
@@ -65,10 +64,10 @@ class AdminUserController extends Controller
                 'email' => $randomEmail,
                 'password' => Hash::make('temporal123'),
                 'phone' => $request->phone,
-                'role_id' => 4, // Jefe de Familia por defecto
+                'role_id' => 4, 
                 'family_id' => $familyGroup->id,
                 'is_active' => true,
-                'email_verified_at' => null, // Se verificará en el registro
+                'email_verified_at' => null, 
                 'direccion' => null,
                 'direccion_verified' => false,
                 'two_factor_enabled' => false
@@ -99,6 +98,29 @@ class AdminUserController extends Controller
             ], 500);
         }
     }
+
+    public function obtenermiscerradasadministradas(Request $request): JsonResponse
+{
+    $user = $request->user();
+
+    $cerradas = Cerrada::with(['configurationPayDate', 'assignedGuard'])
+        ->where('jefe_cerrada_id', $user->id)
+        ->get();
+
+    if ($cerradas->isEmpty()) {
+        return response()->json([
+            'message' => 'No tienes cerradas asignadas!',
+            'data'    => [],
+            'status'  => false,
+        ], 404);
+    }
+
+    return response()->json([
+        'message' => 'Cerradas administradas obtenidas correctamente.',
+        'data'    => $cerradas,
+        'status'  => true,
+    ], 200);
+}
 
     /**
      * Obtener lista de usuarios

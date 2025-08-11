@@ -8,6 +8,7 @@ use App\Http\Requests\Cerradas\SetLocalidadCerradaReq;
 use App\Http\Requests\Cerradas\StrCerradaReq;
 use App\Http\Requests\Cerradas\UpdCerradaReq;
 use App\Models\Cerrada;
+use App\Models\ConfigurationPayDate;
 use App\Models\LocalidadEntrada;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,9 +34,8 @@ class CerradasController extends Controller
         $validated = $request->validate([
             'nombre'                  => 'required|string|unique:cerradas,group_name|min:5|max:127',
             'description'             => 'required|string|min:10|max:255',
-            'jefe_cerrada_id'         => 'required|integer|exists:users,id',
             'guard_id'                => 'sometimes|nullable|integer|exists:users,id',
-            'configuration_pay_date'  => 'required|integer|exists:configuration_pay_dates,id',
+            'configuration_pay_date'  => 'required|integer|exists:configuration_pay_date,id',
             'latitud'                 => 'required|numeric|between:-90,90',
             'longitud'                => 'required|numeric|between:-180,180',
         ], [
@@ -44,15 +44,10 @@ class CerradasController extends Controller
             'nombre.unique'                   => 'El nombre de la cerrada ya está en uso.',
             'nombre.min'                      => 'El nombre debe tener al menos :min caracteres.',
             'nombre.max'                      => 'El nombre no puede exceder de :max caracteres.',
-
             'description.required'            => 'La descripción es obligatoria.',
             'description.string'              => 'La descripción debe ser una cadena de texto.',
             'description.min'                 => 'La descripción debe tener al menos :min caracteres.',
             'description.max'                 => 'La descripción no puede exceder de :max caracteres.',
-
-            'jefe_cerrada_id.required'        => 'El campo jefe de cerrada es obligatorio.',
-            'jefe_cerrada_id.integer'         => 'El jefe de cerrada debe ser un identificador numérico.',
-            'jefe_cerrada_id.exists'          => 'El jefe de cerrada seleccionado no existe.',
 
             'guard_id.integer'                => 'El guardia asignado debe ser un identificador numérico.',
             'guard_id.exists'                 => 'El guardia asignado no existe.',
@@ -74,7 +69,6 @@ class CerradasController extends Controller
         $cerrada = Cerrada::create([
             'group_name'             => $validated['nombre'],
             'description'            => $validated['description']             ?? null,
-            'jefe_cerrada_id'        => $validated['jefe_cerrada_id']        ?? null,
             'guard_id'               => $validated['guard_id']               ?? null,
             'configuration_pay_date' => $validated['configuration_pay_date'] ?? null,
         ]);
@@ -100,6 +94,18 @@ class CerradasController extends Controller
     public function show(string $id)
     {
         //
+    }
+
+
+     public function getConfigurations(): JsonResponse
+    {
+        $configs = ConfigurationPayDate::all();
+
+        return response()->json([
+            'data'    => $configs,
+            'message' => 'Configuraciones de fecha de pago obtenidas exitosamente.',
+            'status'  => true,
+        ], 200);
     }
 
 

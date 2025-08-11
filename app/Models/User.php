@@ -110,6 +110,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Cerrada::class, 'guard_id');
     }
 
+
+    public function bitacora(): HasMany
+    {
+         return $this->hasMany(Bitacora::class, 'tecnico_id', 'id');
+    }
     public function cerradasAsBoss(): HasMany
     {
         return $this->hasMany(Cerrada::class, 'jefe_cerrads_id');
@@ -118,4 +123,8 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(CatalogoDispositivo::class, 'tecnico_id');
     }
+    public function solicitudesCambio(): HasMany
+{
+    return $this->hasMany(SolicitudCambioCerrada::class, 'user_solicitud');
+}
 }

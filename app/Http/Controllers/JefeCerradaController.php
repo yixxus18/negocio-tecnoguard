@@ -22,9 +22,165 @@ use Log;
 
 class JefeCerradaController extends Controller
 {
+
+
+    /**obtener todos los guardias de mi cerrada */
+    // public function obtenerallguardiasdemicerrada(Request $request)
+    // {
+
+    // }
     /**
      * Obtener familias de la cerrada
      */
+
+
+
+    public function cambioguardia(Request $request, int $guardiaId): JsonResponse
+{
+   
+    $v = Validator::make($request->all(), [
+        'cerrada_id' => 'required|integer|exists:cerradas,id',
+    ], [
+        'cerrada_id.required' => 'El campo cerrada_id es obligatorio.',
+        'cerrada_id.integer'  => 'El campo cerrada_id debe ser un número entero.',
+        'cerrada_id.exists'   => 'La cerrada indicada no existe.',
+    ]);
+
+    if ($v->fails()) {
+        return response()->json([
+            'message' => 'Los datos proporcionados no son válidos.',
+            'data'    => ['errors' => $v->errors()],
+            'status'  => false,
+        ], 422);
+    }
+
+    $guardia = User::find($guardiaId);
+    if (! $guardia) {
+        return response()->json([
+            'message' => 'No se encontró al usuario.',
+            'data'    => null,
+            'status'  => false,
+        ], 404);
+    }
+
+    $cerrada = Cerrada::find($request->input('cerrada_id')); 
+
+
+    $yaAsignado = Cerrada::where('guard_id', $guardiaId)
+        ->where('id', '!=', $cerrada->id)
+        ->exists();
+
+    if ($yaAsignado) {
+        return response()->json([
+            'message' => 'El guardia ya está asignado a otra cerrada.',
+            'data'    => null,
+            'status'  => false,
+        ], 409);
+    }
+
+    $cerrada->update(['guard_id' => $guardia->id]);
+
+    return response()->json([
+        'message' => 'Guardia asignado/cambiado correctamente.',
+        'data'    => $cerrada->load('assignedGuard'),
+        'status'  => true,
+    ], 200);
+}
+
+    public function obtenerguardiaslibres(Request $request): JsonResponse
+{
+    try {
+      
+        $sub = Cerrada::query()
+            ->select('guard_id')
+            ->whereNotNull('guard_id');
+
+        $guards = User::query()
+            ->where('role_id', 3)
+            ->whereNotIn('id', $sub)   
+            ->get(['id', 'name', 'email', 'phone']);
+
+        if ($guards->isEmpty()) {
+            return response()->json([
+                'message' => 'No hay guardias libres disponibles.',
+                'data'    => [],
+                'status'  => false,
+            ], 404);
+        }
+        $data = $guards->map(fn ($g) => [
+            'id'      => $g->id,
+            'nombre'  => $g->name,
+            'email'   => $g->email,
+            'phone'   => $g->phone,
+            'ocupado' => false,
+        ])->values();
+
+        return response()->json([
+            'message' => 'Guardias libres obtenidos correctamente.',
+            'data'    => $data,
+            'status'  => true,
+        ], 200);
+    } catch (\Throwable $e) {
+        \Log::error('obtenerguardiaslibres error: '.$e->getMessage());
+        return response()->json([
+            'message' => 'Ocurrió un error al obtener guardias libres.',
+            'data'    => null,
+            'status'  => false,
+        ], 500);
+    }
+}
+
+public function obtenerusuariosmicerrada(Request $request): JsonResponse
+{
+    $jefe = $request->user();
+
+    // Usuarios que pertenecen a familias cuyas cerradas son del jefe autenticado.
+    // Cargamos con Eloquent las relaciones para NO usar joins manuales.
+    $usuarios = User::with([
+            'familyGroup.cerrada:id,group_name' // para obtener nombre de la cerrada
+        ])
+        ->whereHas('familyGroup.cerrada', function ($q) use ($jefe) {
+            $q->where('jefe_cerrada_id', $jefe->id);
+        })
+        ->get(['id','name','email','phone','family_id','role_id']);
+
+    if ($usuarios->isEmpty()) {
+        return response()->json([
+            'message' => 'No tiene una cerrada asignada o no hay usuarios en sus cerradas.',
+            'data'    => [],
+            'status'  => false,
+        ], 404);
+    }
+
+    $data = $usuarios->map(function (User $u) {
+        $fg       = $u->familyGroup;          // FamilyGroup (puede ser null si no tiene)
+        $cerrada  = $fg?->cerrada;            // Cerrada relacionada
+        $rolLabel = $u->role_id === 4
+            ? 'Jefe de familia'
+            : ($u->role_id === 5 ? 'Familiar' : 'Otro');
+
+        return [
+            'id'             => $u->id,
+            'name'           => $u->name,
+            'email'          => $u->email,
+            'phone'          => $u->phone,
+            'family_id'      => $u->family_id,
+            'role_id'        => $u->role_id,
+            'rol'            => $rolLabel,
+            'cerrada_id'     => $fg?->cerrada_id,
+            'cerrada_nombre' => $cerrada?->group_name,
+        ];
+    })->values();
+
+    return response()->json([
+        'message' => 'Usuarios de tus cerradas obtenidos correctamente.',
+        'data'    => $data,
+        'status'  => true,
+    ], 200);
+}
+
+
+
     public function obtenerFamiliasCerrada(Request $request): JsonResponse
     {
         $jefe_cerrada = $request->user();
@@ -47,7 +203,6 @@ class JefeCerradaController extends Controller
 
      public function obtenerpagosdemicerrada(Request $request): JsonResponse
     {
-        // validar fechas
         $v = Validator::make($request->all(), [
             'initial_date' => 'required|date_format:Y-m-d',
             'final_date'   => 'required|date_format:Y-m-d|after_or_equal:initial_date',

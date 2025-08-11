@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bitacora;
 use App\Models\CatalogoDispositivo;
+use App\Models\Cerrada;
+use App\Models\TipoServicio;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 class TecnicoController extends Controller
 {
     /**
@@ -95,6 +100,47 @@ class TecnicoController extends Controller
             'url_archivo'  => $fileUrl,
         ], 201);
     }
+
+
+   public function downloadConfig(Request $request)
+    {
+        // 1) Validar que recibimos una URL válida
+        $request->validate([
+            'url' => 'required|url',
+        ], [
+            'url.required' => 'La URL del archivo es obligatoria.',
+            'url.url'      => 'La URL proporcionada no es válida.',
+        ]);
+
+        $url     = $request->input('url');
+        $baseUrl = rtrim(config('filesystems.disks.s3.url'), '/') . '/';
+
+        // 2) Verificar que la URL pertenezca al bucket
+        if (!Str::startsWith($url, $baseUrl)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La URL no pertenece al bucket configurado.'
+            ], 400);
+        }
+
+        // 3) Hacer la petición HTTP para obtener el JSON
+        $response = Http::get($url);
+
+        if (! $response->ok()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo descargar el archivo desde el bucket.'
+            ], 404);
+        }
+
+        // 4) Devolver el cuerpo como descarga
+        return response($response->body(), 200, [
+            'Content-Type'        => 'application/json',
+            'Content-Disposition' => 'attachment; filename="config.json"',
+        ]);
+    }
+
+    
     /**
      * Actualizar un dispositivo existente.
      */
@@ -146,4 +192,78 @@ class TecnicoController extends Controller
             'message' => 'Dispositivo eliminado correctamente.'
         ], 200);
     }
+public function crearActividadcontecnico(Request $request)
+{
+    $validated = $request->validate([
+        'tecnico_id'        => 'required|integer',
+        'cerrada_id'        => 'required|integer',
+        'tiposervicio_id'   => 'required|integer',
+        'fecha_programada'  => 'required|date',
+        'fecha_asignacion'  => 'required|date',
+        'status'            => 'nullable|string|in:,Asignado',
+        'Prioridad'         => 'nullable|string|in:Urgente,Importante,Sin prioridad',
+        'descripcion'       => 'nullable|string|max:500',
+    ], [
+        'tecnico_id.required'       => 'El técnico es obligatorio.',
+        'tecnico_id.integer'        => 'El técnico debe ser un número.',
+        'cerrada_id.required'       => 'La cerrada es obligatoria.',
+        'cerrada_id.integer'        => 'La cerrada debe ser un número.',
+        'tiposervicio_id.required'  => 'El tipo de servicio es obligatorio.',
+        'tiposervicio_id.integer'   => 'El tipo de servicio debe ser un número.',
+        'fecha_asignacion.date'     => 'La fecha de asignacion debe ser una fecha válida.',
+        'fecha_programada.date'     => 'La fecha programada debe ser una fecha válida.',
+        'status.in'                 => 'El estado debe ser: Asignado, En Proceso, Concluido o No concluido.',
+        'Prioridad.in'              => 'La prioridad debe ser: Urgente, Importante o Sin prioridad.',
+        'descripcion.string'        => 'La descripción debe ser un texto.',
+        'descripcion.max'           => 'La descripción no puede exceder de :max caracteres.',
+    ]);
+
+    // Checar si ya existe una actividad para esa cerrada que NO esté Concluida
+    $yaExiste = Bitacora::where('cerrada_id', $validated['cerrada_id'])
+        ->where(function ($q) {
+            $q->whereNull('status')      // por si hay registros sin status
+              ->orWhere('status', '!=', 'Concluido');
+        })
+        ->exists();
+
+    if ($yaExiste) {
+        return response()->json([
+            'success' => false,
+            'message' => 'ya existe una actividad para esta cerrada',
+            'data'    => null,
+        ], 500);
+    }
+
+    $actividad = Bitacora::create([
+        'tecnico_id'        => $validated['tecnico_id'],
+        'cerrada_id'        => $validated['cerrada_id'],
+        'tiposervicio_id'   => $validated['tiposervicio_id'],
+        'fecha_asignacion'  => $validated['fecha_asignacion'],
+        'fecha_programada'  => $validated['fecha_programada'],
+        'status'            => $validated['status']      ?? 'Asignado',
+        'prioridad'         => $validated['Prioridad']   ?? 'Sin prioridad',
+        'descripcion'       => $validated['descripcion'] ?? null,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Actividad creada correctamente.',
+        'data'    => $actividad,
+    ], 201);
+}
+
+public function newactivityfromtecnichian()
+{
+    $cerradas  = Cerrada::all();
+    $servicios = TipoServicio::all();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Registros cargados correctamente.',
+        'data'    => [
+            'cerradas'  => $cerradas,
+            'servicios' => $servicios,
+        ],
+    ], 200);
+}
 }

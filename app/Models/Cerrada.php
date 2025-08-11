@@ -65,4 +65,23 @@ class Cerrada extends Model
     {
         return $this->hasMany(CatalogoDispositivo::class, 'cerrada_id');
     }
+
+
+    public function solicitudesProvenientes(): HasMany
+{
+    return $this->hasMany(SolicitudCambioCerrada::class, 'cerradaproveniente_id');
+}
+
+public function bitacora(): HasMany
+    {
+        return $this->hasMany(Bitacora::class);
+    }
+
+/**
+ * Solicitudes donde esta cerrada es la de destino
+ */
+public function solicitudesDestinos(): HasMany
+{
+    return $this->hasMany(SolicitudCambioCerrada::class, 'cerradadestino_id');
+}
 }

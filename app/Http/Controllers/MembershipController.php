@@ -44,11 +44,11 @@ class MembershipController extends Controller
 
             if ($nextPayDate < $today) {
                
-                $detail->status       = 'Rechazado';
+                $detail->estatus       = 'rechazado';
                 $membership->is_active = false;
                 $membership->save();
             } else {
-                $detail->status = 'Pendiente';
+                $detail->estatus = 'rechazado';
             }
 
             $detail->save();
@@ -82,7 +82,7 @@ class MembershipController extends Controller
             $nextPayRaw = $membership->getOriginal('next_pay');
 
             
-            $detail->status            = 'Validado';
+            $detail->estatus            = 'Validado';
             $detail->date_finalization = $nextPayRaw;
             $detail->save();      
           $membership->last_pay  = $detail->date_pay;
