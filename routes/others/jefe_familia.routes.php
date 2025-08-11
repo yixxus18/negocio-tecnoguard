@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\JefeFamiliaController;
+use App\Http\Controllers\TokensController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -16,4 +17,7 @@ Route::middleware(['role:4'])->group(function () {
 
 });
 
-Route::middleware('role:4,5')->post('token', [JefeFamiliaController::class, 'generarTokenAcceso']);
+Route::middleware('role:4,5')->group(function () {
+    Route::post('token', [TokensController::class, 'generarTokenAcceso']);
+    Route::get('tokens', [TokensController::class, 'obtenerTokens']);
+});

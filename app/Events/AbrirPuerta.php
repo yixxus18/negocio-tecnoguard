@@ -15,13 +15,12 @@ class AbrirPuerta implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $data;
+    public $cerradaId;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct($data)
+    public function __construct($data, $cerradaId)
     {
         $this->data = $data;
+        $this->cerradaId = $cerradaId;
     }
 
     /**
@@ -31,7 +30,7 @@ class AbrirPuerta implements ShouldBroadcast
      */
     public function broadcastOn(): Channel
     {
-        return new Channel('puerta');
+        return new Channel('puerta.'.$this->cerradaId);
     }
 
     public function broadcastAs()
