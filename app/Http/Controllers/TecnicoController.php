@@ -68,22 +68,22 @@ class TecnicoController extends Controller
 // }
 
 
-
 public function crearconfiguracioninicialiot(Request $request, ?int $identificador = null)
 {
     try {
-        // Valores de websocket desde config/broadcast.php (que a su vez lee .env)
+        // Valores desde config/broadcast.php (que lee .env)
         $pusherKey = config('broadcast.ws.pusher_app_key');
         $wsHost    = config('broadcast.ws.host');
         $wsPort    = (int) config('broadcast.ws.port');
 
-        // Nombre de canal y evento (pueden venir del request; defaults si no)
-        $channelName = (string) $request->input('chanel_name', 'Puerta');
+        // Extras opcionales desde el request (con defaults)
+        $channelName = (string) $request->input('chanel_name', 'Puerta');     // (sic) chanel_name
         $eventName   = (string) $request->input('event_name', 'AbrirPuerta');
 
-        // 1) Si viene identificador en la ruta: buscar el catálogo y responderlo
+        // 1) Si viene identificador, devolver ese catálogo con relaciones
         if (!is_null($identificador)) {
             $catalogo = CatalogoDispositivo::with(['detalles', 'cerrada'])->find($identificador);
+
             if (!$catalogo) {
                 return response()->json([
                     'success' => false,
@@ -103,7 +103,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
                 'websocket_host' => $wsHost,
                 'websocket_port' => $wsPort,
 
-                // Extras de config
+                // Extras
                 'chanel_name' => $channelName,
                 'ssid'        => (string) ($catalogo->ssid ?? ''),
                 'password'    => (string) ($catalogo->password ?? ''),
@@ -118,7 +118,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
                         'updated_at'         => optional($d->updated_at)->toJSON(),
                         'uid'                => $d->uid,
                         'catalogo_id'        => $d->catalogo_id,
-                        'pin'                => $d->pin ?? null, // si existe columna pin
+                        'pin'                => $d->getAttribute('pin'), // por si existe la columna
                         'nombre_dispositivo' => $d->nombre_dispositivo,
                     ];
                 })->values()->all(),
@@ -138,17 +138,17 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
             return response()->json($payload, 200);
         }
 
-        // 2) Sin identificador en ruta: crear registro (asumiendo columnas NULLables)
-        //    Si en tu DB aún son NOT NULL, debes ajustar migraciones o validar aquí.
+        // 2) Sin identificador: crear registro en blanco (todos null)
         $catalogo = CatalogoDispositivo::create([
-            'cerrada_id'            => $request->input('cerrada_id'),                 // o null
-            'tecnico_id'            => $request->input('tecnico_id'),                 // o null
-            'archivo_configuracion' => $request->input('archivo_configuracion', 'config_v1.0.0'),
-            'bitacora_id'           => $request->input('bitacora_id'),                // o null
-            'ssid'                  => $request->input('ssid'),                       // o null
-            'password'              => $request->input('password'),                   // o null
+            'cerrada_id'            => null,
+            'tecnico_id'            => null,
+            'archivo_configuracion' => null,
+            'bitacora_id'           => null,
+            'ssid'                  => null,
+            'password'              => null,
         ]);
 
+        // Cargar relaciones para homogeneidad del payload
         $catalogo->load(['detalles', 'cerrada']);
 
         $payload = [
@@ -163,7 +163,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
             'websocket_host' => $wsHost,
             'websocket_port' => $wsPort,
 
-            // Extras de config
+            // Extras
             'chanel_name' => $channelName,
             'ssid'        => (string) ($catalogo->ssid ?? ''),
             'password'    => (string) ($catalogo->password ?? ''),
@@ -178,7 +178,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
                     'updated_at'         => optional($d->updated_at)->toJSON(),
                     'uid'                => $d->uid,
                     'catalogo_id'        => $d->catalogo_id,
-                    'pin'                => $d->pin ?? null, // si existe columna pin
+                    'pin'                => $d->getAttribute('pin'),
                     'nombre_dispositivo' => $d->nombre_dispositivo,
                 ];
             })->values()->all(),

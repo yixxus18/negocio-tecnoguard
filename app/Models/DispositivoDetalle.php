@@ -16,6 +16,7 @@ class DispositivoDetalle extends Model
         'catalogo_id',
         'uid',
         'nombre_dispositivo',
+        'pin'
     ];
 
     /**

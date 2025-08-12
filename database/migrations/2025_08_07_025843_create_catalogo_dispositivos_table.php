@@ -11,19 +11,29 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('catalogo_dispositivos', function (Blueprint $table) {
+       Schema::create('catalogo_dispositivos', function (Blueprint $table) {
             $table->id();
-            
+
+            // Todas las FKs nullable y con nullOnDelete
             $table->foreignId('cerrada_id')
-                  ->constrained('cerradas');
-            
+                ->nullable()
+                ->constrained('cerradas')
+                ->nullOnDelete();
+
             $table->foreignId('tecnico_id')
-                  ->constrained('users');
-            
-        
-            $table->string('archivo_configuracion', 512);
-            
-            
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            $table->string('archivo_configuracion', 512)->nullable();
+            $table->string('ssid', 512)->nullable();
+            $table->string('password', 512)->nullable();
+
+            $table->foreignId('bitacora_id')
+                ->nullable()
+                ->constrained('bitacora')
+                ->nullOnDelete();
+
             $table->timestamps();
         });
     }

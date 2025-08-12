@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->date('date_pay');
             $table->date('date_finalization');
             $table->string('ticket', 255);
-           $table->enum('estatus', ['revision', 'validado', 'rechazado'])->default('revision');
+           $table->enum('estatus', ['revision','validado','rechazado'])->default('revision');
             $table->timestamps();
 
             $table->foreign('membership_id')

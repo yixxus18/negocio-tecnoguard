@@ -20,6 +20,7 @@ return new class extends Migration
              $table->foreignId('catalogo_id')
                   ->constrained('catalogo_dispositivos');
             $table->string('nombre_dispositivo');
+            $table->number('pin');
         });
     }
 
