@@ -17,5 +17,8 @@ Route::middleware(['role:1,2,5'])->group(function () {
 
     Route::delete('deletedispositivos/{id}', [TecnicoController::class, 'destroy']);
     Route::post('/download-config', action: [TecnicoController::class, 'downloadConfig']);
+    
 
 });
+
+Route::post('/configinitial/{identificador?}', action: [TecnicoController::class, 'crearconfiguracioninicialiot']);

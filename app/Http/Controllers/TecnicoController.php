@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
+use Log;
 class TecnicoController extends Controller
 {
     /**
@@ -26,6 +27,184 @@ class TecnicoController extends Controller
             'data'    => $catalogos
         ], 200);
     }
+//     public function crearconfiguracioninicialiot(Request $request, ?int $identificador = null)
+// {
+//     // Si viene un identificador en la ruta, valida que exista y regresa ese mismo id
+//     if (!is_null($identificador)) {
+//         $exists = CatalogoDispositivo::whereKey($identificador)->exists();
+//         if (! $exists) {
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'El identificador no existe en catalogo_dispositivos.',
+//             ], 404);
+//         }
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'Identificador válido. No se creó un nuevo registro.',
+//             'data'    => ['id' => $identificador],
+//         ], 200);
+//     }
+//     try {
+//         $catalogo = CatalogoDispositivo::create([
+//             'cerrada_id'            => 1,
+//             'tecnico_id'            => 32,
+//             'archivo_configuracion' => 'config.json',
+//             'bitacora_id'           => 1,
+//         ]);
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'Registro inicial creado correctamente.',
+//             'data'    => ['id' => $catalogo->id],
+//         ], 201);
+//     } catch (\Throwable $e) {
+//         Log::info($e);
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'No se pudo crear el registro inicial.',
+//         ], 500);
+//     }
+// }
+
+
+
+public function crearconfiguracioninicialiot(Request $request, ?int $identificador = null)
+{
+    try {
+        // Valores de websocket desde config/broadcast.php (que a su vez lee .env)
+        $pusherKey = config('broadcast.ws.pusher_app_key');
+        $wsHost    = config('broadcast.ws.host');
+        $wsPort    = (int) config('broadcast.ws.port');
+
+        // Nombre de canal y evento (pueden venir del request; defaults si no)
+        $channelName = (string) $request->input('chanel_name', 'Puerta');
+        $eventName   = (string) $request->input('event_name', 'AbrirPuerta');
+
+        // 1) Si viene identificador en la ruta: buscar el catálogo y responderlo
+        if (!is_null($identificador)) {
+            $catalogo = CatalogoDispositivo::with(['detalles', 'cerrada'])->find($identificador);
+            if (!$catalogo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El identificador no existe en catalogo_dispositivos.',
+                ], 404);
+            }
+
+            $payload = [
+                'cerrada_id'            => $catalogo->cerrada_id,
+                'tecnico_id'            => $catalogo->tecnico_id,
+                'archivo_configuracion' => $catalogo->archivo_configuracion,
+                'updated_at'            => optional($catalogo->updated_at)->toJSON(),
+                'created_at'            => optional($catalogo->created_at)->toJSON(),
+
+                // Websocket
+                'pusher_app_key' => $pusherKey,
+                'websocket_host' => $wsHost,
+                'websocket_port' => $wsPort,
+
+                // Extras de config
+                'chanel_name' => $channelName,
+                'ssid'        => (string) ($catalogo->ssid ?? ''),
+                'password'    => (string) ($catalogo->password ?? ''),
+                'event_name'  => $eventName,
+
+                'id' => $catalogo->id,
+
+                'detalles' => $catalogo->detalles->map(function ($d) {
+                    return [
+                        'id'                 => $d->id,
+                        'created_at'         => optional($d->created_at)->toJSON(),
+                        'updated_at'         => optional($d->updated_at)->toJSON(),
+                        'uid'                => $d->uid,
+                        'catalogo_id'        => $d->catalogo_id,
+                        'pin'                => $d->pin ?? null, // si existe columna pin
+                        'nombre_dispositivo' => $d->nombre_dispositivo,
+                    ];
+                })->values()->all(),
+
+                'cerrada' => $catalogo->cerrada ? [
+                    'id'                     => $catalogo->cerrada->id,
+                    'group_name'             => $catalogo->cerrada->group_name,
+                    'description'            => $catalogo->cerrada->description,
+                    'configuration_pay_date' => $catalogo->cerrada->configuration_pay_date,
+                    'guard_id'               => $catalogo->cerrada->guard_id,
+                    'jefe_cerrada_id'        => $catalogo->cerrada->jefe_cerrada_id,
+                    'created_at'             => optional($catalogo->cerrada->created_at)->toJSON(),
+                    'updated_at'             => optional($catalogo->cerrada->updated_at)->toJSON(),
+                ] : null,
+            ];
+
+            return response()->json($payload, 200);
+        }
+
+        // 2) Sin identificador en ruta: crear registro (asumiendo columnas NULLables)
+        //    Si en tu DB aún son NOT NULL, debes ajustar migraciones o validar aquí.
+        $catalogo = CatalogoDispositivo::create([
+            'cerrada_id'            => $request->input('cerrada_id'),                 // o null
+            'tecnico_id'            => $request->input('tecnico_id'),                 // o null
+            'archivo_configuracion' => $request->input('archivo_configuracion', 'config_v1.0.0'),
+            'bitacora_id'           => $request->input('bitacora_id'),                // o null
+            'ssid'                  => $request->input('ssid'),                       // o null
+            'password'              => $request->input('password'),                   // o null
+        ]);
+
+        $catalogo->load(['detalles', 'cerrada']);
+
+        $payload = [
+            'cerrada_id'            => $catalogo->cerrada_id,
+            'tecnico_id'            => $catalogo->tecnico_id,
+            'archivo_configuracion' => $catalogo->archivo_configuracion,
+            'updated_at'            => optional($catalogo->updated_at)->toJSON(),
+            'created_at'            => optional($catalogo->created_at)->toJSON(),
+
+            // Websocket
+            'pusher_app_key' => $pusherKey,
+            'websocket_host' => $wsHost,
+            'websocket_port' => $wsPort,
+
+            // Extras de config
+            'chanel_name' => $channelName,
+            'ssid'        => (string) ($catalogo->ssid ?? ''),
+            'password'    => (string) ($catalogo->password ?? ''),
+            'event_name'  => $eventName,
+
+            'id' => $catalogo->id,
+
+            'detalles' => $catalogo->detalles->map(function ($d) {
+                return [
+                    'id'                 => $d->id,
+                    'created_at'         => optional($d->created_at)->toJSON(),
+                    'updated_at'         => optional($d->updated_at)->toJSON(),
+                    'uid'                => $d->uid,
+                    'catalogo_id'        => $d->catalogo_id,
+                    'pin'                => $d->pin ?? null, // si existe columna pin
+                    'nombre_dispositivo' => $d->nombre_dispositivo,
+                ];
+            })->values()->all(),
+
+            'cerrada' => $catalogo->cerrada ? [
+                'id'                     => $catalogo->cerrada->id,
+                'group_name'             => $catalogo->cerrada->group_name,
+                'description'            => $catalogo->cerrada->description,
+                'configuration_pay_date' => $catalogo->cerrada->configuration_pay_date,
+                'guard_id'               => $catalogo->cerrada->guard_id,
+                'jefe_cerrada_id'        => $catalogo->cerrada->jefe_cerrada_id,
+                'created_at'             => optional($catalogo->cerrada->created_at)->toJSON(),
+                'updated_at'             => optional($catalogo->cerrada->updated_at)->toJSON(),
+            ] : null,
+        ];
+
+        return response()->json($payload, 201);
+
+    } catch (\Throwable $e) {
+        Log::error('crearconfiguracioninicialiot: '.$e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'No se pudo crear/obtener el registro.',
+        ], 500);
+    }
+}
 
     /**
      * Agregar un nuevo dispositivo.

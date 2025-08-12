@@ -17,6 +17,9 @@ class CatalogoDispositivo extends Model
         'cerrada_id',
         'tecnico_id',
         'archivo_configuracion',
+        'bitacora_id',
+        'ssid',
+        'password'
     ];
 
     /**

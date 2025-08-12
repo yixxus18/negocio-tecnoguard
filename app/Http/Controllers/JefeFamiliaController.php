@@ -106,58 +106,110 @@ class JefeFamiliaController extends Controller
         ]);
     }
 
+
+
+    
     /**
      * Obtener historial de membresía
      */
-    public function obtenerHistorialMembresia(Request $request): JsonResponse
-    {
+   public function obtenerHistorialMembresia(Request $request)
+{
+    
+    $user = $request->user();
 
-        $autenticado=$request->user();
-        $user=User::where('id',$autenticado->id)->get();
+    if (!$user) {
         return response()->json([
-            'message' => 'Historial de membresía obtenido exitosamente',
-            'data' => []
-        ]);
+            'message' => 'No autenticado.',
+            'status'  => false,
+            'data'    => null,
+        ], 401);
     }
 
-    public function procesarPagoFamilia(CrearPagoReq $request): JsonResponse
-    {
-        $data = $request->validated();
-        $jefe_cerrada = $request->user();
-        $membership = Membership::find($data['membership_id'])->load('familyGroups');
+    if (!$user->family_id) {
+        return response()->json([
+            'message' => 'No perteneces a ninguna familia.',
+            'status'  => false,
+            'data'    => null,
+        ], 404);
+    }
+
+    $family = FamilyGroup::find($user->family_id);
+    if (!$family) {
+        return response()->json([
+            'message' => 'La familia no existe.',
+            'status'  => false,
+            'data'    => null,
+        ], 404);
+    }
+
+    if (!$family->membership_id) {
+        return response()->json([
+            'message' => 'La familia no tiene una membresía asociada.',
+            'status'  => false,
+            'data'    => null,
+        ], 404);
+    }
+
+    $membership = Membership::find($family->membership_id);
+    if (!$membership) {
+        return response()->json([
+            'message' => 'La membresía no existe.',
+            'status'  => false,
+            'data'    => null,
+        ], 404);
+    }
+
+    
+    $details = MembershipDetail::where('membership_id', $membership->id)
+        ->orderByDesc('date_pay')
+        ->get();
+
+    return response()->json([
+        'message' => 'Historial de membresía obtenido exitosamente',
+        'status'  => true,
+        'data'    => $details,  // arreglo (puede venir vacío si no hay pagos)
+    ], 200);
+}
+
+
+    // public function procesarPagoFamilia(CrearPagoReq $request): JsonResponse
+    // {
+    //     $data = $request->validated();
+    //     $jefe_cerrada = $request->user();
+    //     $membership = Membership::find($data['membership_id'])->load('familyGroups');
         
-        if (!$membership->familyGroups) {
-            return response()->json([
-                'message' => 'Error: TG-RES-004, La familia no existe o no pertenece a su cerrada',
-                'status' => false
-            ]);
-        }
-        $ticket = FileService::uploadFile($data['ticket']);
-        if ($ticket['success'] != true) {
-            return response()->json([
-                'message' => 'Error: TG-SRV-001, Error al querer subir la imagen del ticket',
-                'status' => false,
-                'error' => $ticket['error']
-            ]);
-        }
+    //     if (!$membership->familyGroups) {
+    //         return response()->json([
+    //             'message' => 'Error: TG-RES-004, La familia no existe o no pertenece a su cerrada',
+    //             'status' => false
+    //         ]);
+    //     }
+    //     $ticket = FileService::uploadFile($data['ticket']);
+    //     if ($ticket['success'] != true) {
+    //         return response()->json([
+    //             'message' => 'Error: TG-SRV-001, Error al querer subir la imagen del ticket',
+    //             'status' => false,
+    //             'error' => $ticket['error']
+    //         ]);
+    //     }
 
-        $membership_detail = MembershipDetail::create([
-            'membership_id' => $data['membership_id'],
-            'amount' => $data['amount'],
-            'estatus' => $data['status'],
-            'date_pay' => $data['date_pay'],
-            'ticket' => $ticket['file_name'],
-            'date_finalization' => Carbon::parse($data['date_pay'])->addMonth()->format('Y-m-d'),
-        ]);
+    //     $membership_detail = MembershipDetail::create([
+    //         'membership_id' => $data['membership_id'],
+    //         'amount' => $data['amount'],
+    //         'estatus' => $data['status'],
+    //         'date_pay' => $data['date_pay'],
+    //         'ticket' => $ticket['file_name'],
+    //         'date_finalization' => Carbon::parse($data['date_pay'])->addMonth()->format('Y-m-d'),
+    //     ]);
 
-        $solicitud = SolicitudCambioCerrada::create($validated);
+    //     $solicitud = SolicitudCambioCerrada::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Solicitud de cambio creada correctamente.',
-            'data'    => $solicitud->load(['cerradaProveniente', 'cerradaDestino', 'solicitante']),
-        ], 201);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Solicitud de cambio creada correctamente.',
+    //         'data'    => $solicitud->load(['cerradaProveniente', 'cerradaDestino', 'solicitante']),
+    //     ], 201);
+    // }
 
     /**
      * Actualizar una solicitud existente.
