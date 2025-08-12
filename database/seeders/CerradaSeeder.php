@@ -26,7 +26,7 @@ class CerradaSeeder extends Seeder
         $guardiaUsers = DB::table('users')->where('role_id', $guardiaRole->id)->get();
 
         if ($jefeCerradaUsers->isEmpty() || $guardiaUsers->isEmpty()) {
-            echo "Error: No users found for 'jefe cerrada' or 'guardia' roles. Please ensure users are seeded correctly.\n";
+            echo "Warning: No users found for 'jefe cerrada' or 'guardia' roles. Skipping CerradaSeeder.\n";
             return;
         }
 
