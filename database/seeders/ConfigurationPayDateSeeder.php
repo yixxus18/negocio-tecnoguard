@@ -14,7 +14,7 @@ class ConfigurationPayDateSeeder extends Seeder
      */
     public function run(): void
     {
-        for ($i = 1; $i <= 3; $i++) {
+        for ($i = 1; $i <= 4; $i++) {
             DB::table('configuration_pay_date')->insert([
                 'nombre_configuracion' => 'Configuración ' . $i,
                 'Fecha_Corte' => $i,
