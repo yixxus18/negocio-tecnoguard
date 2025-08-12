@@ -30,7 +30,7 @@ class CerradaSeeder extends Seeder
             return;
         }
 
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $jefeCerradaId = $jefeCerradaUsers->get($i)->id ?? null;
             $guardiaId = $guardiaUsers->get($i)->id ?? null;
 

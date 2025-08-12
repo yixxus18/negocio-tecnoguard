@@ -15,11 +15,9 @@ return new class extends Migration
             $table->id();
             
             $table->foreignId('cerrada_id')
-                  ->nullable()
                   ->constrained('cerradas');
             
             $table->foreignId('tecnico_id')
-                  ->nullable()
                   ->constrained('users');
             
         
