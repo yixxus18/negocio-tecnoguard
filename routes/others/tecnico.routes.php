@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 
 // Rutas del Rol de Guardia
-Route::middleware(['role:1,2,5'])->group(function () {
+Route::middleware(['role:1,2,5', 'auth.api'])->group(function () {
     Route::post('/obtenerdispositivos', [TecnicoController::class, 'index']);
 
     Route::post('/adddispositivos', [TecnicoController::class, 'store']);

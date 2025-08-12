@@ -61,7 +61,7 @@ class RouteServiceProvider extends ServiceProvider
 
                 
             Route::prefix('api/v1/tecnico')
-                ->middleware(['api', 'auth.api'])
+                ->middleware(['api'])
                 ->group(base_path('routes/others/tecnico.routes.php'));
 
             Route::middleware('web')
