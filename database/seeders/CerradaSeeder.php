@@ -25,26 +25,19 @@ class CerradaSeeder extends Seeder
         $jefeCerradaUsers = DB::table('users')->where('role_id', $jefeCerradaRole->id)->get();
         $guardiaUsers = DB::table('users')->where('role_id', $guardiaRole->id)->get();
 
-        if ($jefeCerradaUsers->isEmpty() || $guardiaUsers->isEmpty()) {
-            echo "Warning: No users found for 'jefe cerrada' or 'guardia' roles. Skipping CerradaSeeder.\n";
+        if ($jefeCerradaUsers->count() < 4 || $guardiaUsers->count() < 4) {
+            echo "Warning: Not enough users with 'jefe cerrada' or 'guardia' roles to create 4 cerradas. Please ensure at least 4 users exist for each role.\n";
+            // Optionally create fewer if that's desired
             return;
         }
 
-        for ($i = 0; $i < 5; $i++) {
-            $jefeCerradaId = $jefeCerradaUsers->get($i)->id ?? null;
-            $guardiaId = $guardiaUsers->get($i)->id ?? null;
-
-            if (is_null($jefeCerradaId) || is_null($guardiaId)) {
-                echo "Warning: Not enough 'jefe cerrada' or 'guardia' users to create 3 cerradas. Creating fewer.\n";
-                break;
-            }
-
+        for ($i = 0; $i < 4; $i++) {
             DB::table('cerradas')->insert([
                 'group_name' => 'Cerrada ' . ($i + 1),
                 'description' => 'Descripción de la cerrada ' . ($i + 1),
                 'configuration_pay_date' => ($i + 1),
-                'guard_id' => $guardiaId,
-                'jefe_cerrada_id' => $jefeCerradaId,
+                'guard_id' => $guardiaUsers->get($i)->id,
+                'jefe_cerrada_id' => $jefeCerradaUsers->get($i)->id,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
