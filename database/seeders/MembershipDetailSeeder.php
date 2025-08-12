@@ -21,7 +21,7 @@ class MembershipDetailSeeder extends Seeder
                 'date_pay' => Carbon::now()->subDays($i),
                 'date_finalization' => Carbon::now()->addMonth()->subDays($i),
                 'ticket' => 'TICKET00' . $i,
-                'estatus' => ($i == 1) ? 'validado' : (($i == 2) ? 'revision' : 'pendiente'),
+                'estatus' => ($i == 1) ? 'validado' : (($i == 2) ? 'revision' : 'revision'),
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
