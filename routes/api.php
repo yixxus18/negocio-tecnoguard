@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CameraController;
 use App\Http\Controllers\PuertasController;
+use App\Http\Controllers\TokensController;
 use App\Services\FileService;
 use App\Services\FileUploadService;
 use Illuminate\Http\Request;
@@ -31,6 +32,8 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::post('imagenes', [CameraController::class, 'imagenes']);
+    Route::post('use/token', [TokensController::class, 'usarToken']);
+
 });
 
 

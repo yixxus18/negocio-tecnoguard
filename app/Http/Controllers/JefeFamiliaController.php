@@ -32,6 +32,12 @@ class JefeFamiliaController extends Controller
     {
         $data = $request->validated();
         $jefe_familia = $request->user();
+        if($jefe_familia->family_id == null){
+            return response()->json([
+                'message' => 'No cuenta con una familia asignada.',
+                'status' => false
+            ], 400);
+        }
         $family_members_count = User::where('family_id', $jefe_familia->family_id)->count();
 
         if ($family_members_count >= 4) {
