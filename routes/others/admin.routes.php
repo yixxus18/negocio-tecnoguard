@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['role:1'])->group(function () {
     Route::resource('users', AdminUserController::class)->except(['edit', 'create', 'store']);
     Route::resource('config-pagos', AdminController::class)->except(['edit', 'create']);
-    Route::resource('cerradas', CerradasController::class)->except(['edit', 'create', 'destroy']);
+   
         Route::get('/configurationspaydate', [CerradasController::class, 'getConfigurations']);
         Route::post('/crearActividadcontecnico',[TecnicoController::class,'crearActividadcontecnico']);
 
@@ -31,6 +31,12 @@ Route::middleware(['role:1'])->group(function () {
     Route::post('cerradas/set-localidad/{id}', [CerradasController::class,'asociarLocalidad']);
     Route::post('cerradas/unset-localidad/{cerradaId}/{localidadId}', [CerradasController::class,'desasociarLocalidad']);
 });
+
+
+Route::middleware(['role:1,6'])->group(function () {
+  Route::resource('cerradas', CerradasController::class)->except(['edit', 'create', 'destroy']);
+});
+
 
 Route::middleware(['role:1,2'])->group(function () {
     Route::get('obtenermiscerradasadministradas',[AdminUserController::class, 'obtenermiscerradasadministradas']);

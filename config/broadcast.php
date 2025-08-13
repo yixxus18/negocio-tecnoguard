@@ -9,6 +9,7 @@ return [
         'port'             => (int) env('REVERB_PORT', 8080),
         'scheme'           => env('REVERB_SCHEME', 'http'),
         'server_path'      => env('REVERB_SERVER_PATH', ''),
+        'dominiows'=>env('WS_DOMINIO',''),
 
         // por si quieres también el app_id/secret:
         'app_id'           => env('REVERB_APP_ID'),

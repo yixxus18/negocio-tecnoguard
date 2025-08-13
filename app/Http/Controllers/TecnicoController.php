@@ -75,6 +75,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
         $pusherKey = config('broadcast.ws.pusher_app_key');
         $wsHost    = config('broadcast.ws.host');
         $wsPort    = (int) config('broadcast.ws.port');
+        $dominiows =config('broadcast.ws.dominiows');
 
         // Extras opcionales desde el request (con defaults)
         $channelName = (string) $request->input('chanel_name', 'Puerta');     // (sic) chanel_name
@@ -102,6 +103,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
                 'pusher_app_key' => $pusherKey,
                 'websocket_host' => $wsHost,
                 'websocket_port' => $wsPort,
+                'dominiows'=>$dominiows,
 
                 // Extras
                 'chanel_name' => $channelName,
@@ -162,6 +164,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
             'pusher_app_key' => $pusherKey,
             'websocket_host' => $wsHost,
             'websocket_port' => $wsPort,
+            'dominiows'=>$dominiows,
 
             // Extras
             'chanel_name' => $channelName,
@@ -430,6 +433,81 @@ public function crearActividadcontecnico(Request $request)
         'data'    => $actividad,
     ], 201);
 }
+
+
+public function catalogosDelTecnico(Request $request)
+{
+    try {
+        $user = $request->user();
+
+        // 1) Bitácoras del técnico autenticado (con cerrada y servicio)
+        $bitacoras = Bitacora::with(['cerrada', 'servicio'])
+            ->where('tecnico_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        // 2) Catálogos vinculados a esas bitácoras (con detalles, cerrada y técnico->name)
+        $catalogosPorBitacora = collect();
+        if ($bitacoras->isNotEmpty()) {
+            $bitacoraIds = $bitacoras->pluck('id');
+
+            $catalogosVinculados = CatalogoDispositivo::with([
+                    'detalles',
+                    'cerrada',
+                    'tecnico:id,name' // para traer el nombre del técnico
+                ])
+                ->whereIn('bitacora_id', $bitacoraIds)
+                ->orderByDesc('created_at')
+                ->get();
+
+            $catalogosPorBitacora = $catalogosVinculados->groupBy('bitacora_id');
+        }
+
+        // 3) Inyectar la relación "catalogo_dispositivos" a cada bitácora
+        $bitacoras->transform(function ($b) use ($catalogosPorBitacora) {
+            $b->setRelation('catalogo_dispositivos', $catalogosPorBitacora->get($b->id, collect()));
+            return $b;
+        });
+
+        // 4) Catálogos donde el técnico sea el actual (míos) con nombre del técnico
+        $catalogoDispositivosMios = CatalogoDispositivo::with([
+                'detalles',
+                'cerrada',
+                'tecnico:id,name'
+            ])
+            ->where('tecnico_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        // 5) Catálogos libres (tecnico_id null) con nombre del técnico (será null)
+        $catalogoDispositivosLibres = CatalogoDispositivo::with([
+                'detalles',
+                'cerrada',
+                'tecnico:id,name'
+            ])
+            ->whereNull('tecnico_id')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Catálogos del técnico obtenidos correctamente.',
+            'data'    => [
+                'bitacoras'                    => $bitacoras,
+                'catalogo_dispositivos_mios'   => $catalogoDispositivosMios,
+                'catalogo_dispositivos_libres' => $catalogoDispositivosLibres,
+            ],
+        ], 200);
+
+    } catch (\Throwable $e) {
+        Log::error('catalogosDelTecnico: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'No fue posible obtener los catálogos del técnico.',
+        ], 500);
+    }
+}
+
 
 public function newactivityfromtecnichian()
 {

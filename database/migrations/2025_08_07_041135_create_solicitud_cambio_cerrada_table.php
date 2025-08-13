@@ -24,20 +24,17 @@ return new class extends Migration
                   ->constrained('cerradas')
                   ->cascadeOnDelete();
 
-            // Banderas de proveniente y destino
             $table->boolean('proveniente')->default(false);
             $table->boolean('destino')->default(false);
 
-            // Usuario que hace la solicitud
+            
             $table->foreignId('user_solicitud')
                   ->constrained('users')
                   ->cascadeOnDelete();
 
-            // Estado de la solicitud
             $table->enum('estado', ['Pendiente', 'Aprobado', 'Rechazado'])
                   ->default('Pendiente');
 
-            // Comentarios (opcionales)
             $table->string('comentariodestino')->nullable();
             $table->string('comentarioproveniente', 255)->nullable();
         });
