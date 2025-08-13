@@ -21,8 +21,8 @@ class GuardiaController extends Controller
         $guardia->load('cerradasAsGuard');
         $log_tokens = ($date != null) ?
             LogToken::where("used_at", '>=', Carbon::parse($date)->format('Y-m-d h-m-s'))
-                ->where('cerrada.id', $guardia->cerradasAsGuard->id)->get() :
-            LogToken::where('cerrada.id', $guardia->cerradasAsGuard->id)->get();
+                ->where('cerrada.id', $guardia->cerradasAsGuard->first()?->id)->get() :
+            LogToken::where('cerrada.id', $guardia->cerradasAsGuard->first()?->id)->get();
 
         return response()->json([
             'message' => 'Logs de acceso obtenidos exitosamente',
