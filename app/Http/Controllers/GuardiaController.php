@@ -15,11 +15,14 @@ class GuardiaController extends Controller
     /**
      * Obtener logs de acceso
      */
-    public function obtenerLogsAcceso(?string $date = null): JsonResponse
+    public function obtenerLogsAcceso(Request $request, ?string $date = null): JsonResponse
     {
+        $guardia = $request->user();
+        $guardia->load('cerradasAsGuard');
         $log_tokens = ($date != null) ?
-            LogToken::where("used_at", '>=', Carbon::parse($date)->format('Y-m-d h-m-s'))->get() :
-            LogToken::all();
+            LogToken::where("used_at", '>=', Carbon::parse($date)->format('Y-m-d h-m-s'))
+                ->where('cerrada.id', $guardia->cerradasAsGuard->first()?->id)->get() :
+            LogToken::where('cerrada.id', $guardia->cerradasAsGuard->first()?->id)->get();
 
         return response()->json([
             'message' => 'Logs de acceso obtenidos exitosamente',

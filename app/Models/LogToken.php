@@ -10,10 +10,13 @@ class LogToken extends Model
 {
     protected $connection = "mongodb";
     protected $collection = "log_tokens";
+    public $timestamps = false;
     protected $fillable = [
         'token',
         'used_at',
         'created_by',
-        'nombre'
+        'nombre',
+        'was_valid',
+        'cerrada'
     ] ;
 }
