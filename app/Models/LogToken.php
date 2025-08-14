@@ -17,6 +17,7 @@ class LogToken extends Model
         'created_by',
         'nombre',
         'was_valid',
-        'cerrada'
+        'cerrada',
+        'puerta'
     ] ;
 }

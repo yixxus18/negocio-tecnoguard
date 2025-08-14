@@ -62,7 +62,8 @@ class TokensController extends Controller
         ]);
         $token = TokenAcceso::where('valor', $data['token'])
             ->where('usos', 1)->first();
-        if($token) $token->load('usuario.familyGroup.cerrada');
+        if ($token)
+            $token->load('usuario.familyGroup.cerrada');
 
         if (
             !$token ||
@@ -88,6 +89,7 @@ class TokensController extends Controller
         $token->update([
             'usos' => 0
         ]);
+        $puerta = $token->puerta == 'peatonal' ? 'peatonal' : 'automovil';
         LogToken::create([
             'token' => $data['token'],
             'used_at' => Carbon::now('America/Monterrey')->addHours(5)->format('Y-m-d h:i:s'),
@@ -97,12 +99,14 @@ class TokensController extends Controller
             'cerrada' => [
                 'name' => $token->usuario->familyGroup->cerrada->group_name,
                 'id' => $token->usuario->familyGroup->cerrada->id
-            ]
+            ],
+            'puerta' => $puerta
         ]);
 
         return response()->json([
             "message" => 'Acceso autorizado!',
-            "status" => true
+            "status" => true,
+            "puerta" => $puerta == 'peatonal' ? 'P' : 'A'
         ]);
 
     }
