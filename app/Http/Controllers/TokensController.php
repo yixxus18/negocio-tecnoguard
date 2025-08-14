@@ -89,6 +89,7 @@ class TokensController extends Controller
         $token->update([
             'usos' => 0
         ]);
+        
         $puerta = $token->puerta == 'peatonal' ? 'peatonal' : 'automovil';
         LogToken::create([
             'token' => $data['token'],
