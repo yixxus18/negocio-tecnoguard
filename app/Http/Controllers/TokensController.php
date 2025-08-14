@@ -77,7 +77,7 @@ class TokensController extends Controller
                 'created_by' => "N/A",
                 'nombre' => "N/A",
                 'was_valid' => false,
-                'cerrada' => "N/A"
+                'cerrada' => ['id' => $data['cerrada_id']]
             ]);
             return response()->json([
                 'message' => 'Se registro intento fallido!',
