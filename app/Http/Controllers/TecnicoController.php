@@ -78,7 +78,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
         $dominiows =config('broadcast.ws.dominiows');
 
         // Extras opcionales desde el request (con defaults)
-        $channelName = (string) $request->input('chanel_name', 'Puerta');     // (sic) chanel_name
+        $channelName = (string) $request->input('chanel_name', 'puerta');     // (sic) chanel_name
         $eventName   = (string) $request->input('event_name', 'AbrirPuerta');
 
         // 1) Si viene identificador, devolver ese catálogo con relaciones
@@ -282,6 +282,102 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
             'url_archivo'  => $fileUrl,
         ], 201);
     }
+
+
+    public function actualizarCatalogo(Request $request, int $catalogo_id)
+{
+    // Validación
+    $validated = $request->validate([
+        'bitacora_id'          => ['required', 'integer', 'exists:bitacora,id'],
+        'tecnico_id'           => ['nullable', 'integer', 'exists:users,id'],
+        'ssid'                 => ['nullable', 'string', 'max:512'],
+        'password'             => ['nullable', 'string', 'max:512'],
+        'detalles'             => ['required', 'array', 'min:1'],
+        'detalles.*.uid'       => ['required', 'string', 'max:64'],
+        'detalles.*.nombre_dispositivo' => ['required', 'string', 'max:255'],
+        'detalles.*.pin'       => ['nullable', 'integer'],
+        // Si llega detalles.*.catalogo_id lo ignoramos; no lo validamos ni usamos
+    ], [
+        'bitacora_id.required' => 'La bitácora es obligatoria.',
+        'bitacora_id.exists'   => 'La bitácora indicada no existe.',
+        'tecnico_id.exists'    => 'El técnico indicado no existe.',
+        'detalles.required'    => 'Debes enviar al menos un detalle.',
+        'detalles.array'       => 'Los detalles deben enviarse como arreglo.',
+        'detalles.min'         => 'Debes enviar al menos un detalle.',
+        'detalles.*.uid.required'  => 'Cada detalle debe incluir un UID.',
+        'detalles.*.uid.max'       => 'El UID no puede exceder 64 caracteres.',
+        'detalles.*.nombre_dispositivo.required' => 'Cada detalle debe incluir nombre_dispositivo.',
+        'detalles.*.nombre_dispositivo.max'      => 'El nombre del dispositivo no puede exceder 255 caracteres.',
+        'detalles.*.pin.integer'  => 'El pin debe ser un número entero.',
+        'ssid.max'                => 'El SSID no puede exceder 512 caracteres.',
+        'password.max'            => 'El password no puede exceder 512 caracteres.',
+    ]);
+
+    try {
+        // Buscar catálogo
+        $catalogo = CatalogoDispositivo::with('detalles')->find($catalogo_id);
+        if (! $catalogo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El catálogo indicado no existe.',
+            ], 404);
+        }
+
+        // Obtener cerrada_id desde la bitácora proporcionada
+        $bitacora = Bitacora::select('id', 'cerrada_id')->find($validated['bitacora_id']);
+        if (! $bitacora) {
+            // Por si pasó la validación pero no se encuentra (raro)
+            return response()->json([
+                'success' => false,
+                'message' => 'La bitácora indicada no existe.',
+            ], 404);
+        }
+
+        DB::transaction(function () use ($catalogo, $validated, $bitacora) {
+            // Actualizar campos del catálogo
+            $catalogo->update([
+                'bitacora_id' => $validated['bitacora_id'],
+                'cerrada_id'  => $bitacora->cerrada_id,                 // tomado de la bitácora
+                'tecnico_id'  => $validated['tecnico_id'] ?? $catalogo->tecnico_id,
+                'ssid'        => $validated['ssid']     ?? null,
+                'password'    => $validated['password'] ?? null,
+            ]);
+
+            // Reemplazar detalles: borrar y crear de nuevo
+            $catalogo->detalles()->delete();
+
+            $detallesToCreate = collect($validated['detalles'])->map(function ($d) use ($catalogo) {
+                return [
+                    'uid'                => $d['uid'],
+                    'catalogo_id'        => $catalogo->id, // ignoramos el que pudiera venir
+                    'nombre_dispositivo' => $d['nombre_dispositivo'] ?? null,
+                    'pin'                => $d['pin'] ?? null,
+                ];
+            })->all();
+
+            if (!empty($detallesToCreate)) {
+                $catalogo->detalles()->createMany($detallesToCreate);
+            }
+        });
+
+        // Recargar con relaciones para la respuesta
+        $catalogo->load(['detalles', 'cerrada', 'tecnico:id,name,email']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Catálogo actualizado correctamente.',
+            'data'    => $catalogo,
+        ], 200);
+
+    } catch (\Throwable $e) {
+        Log::error('actualizarCatalogo: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'No fue posible actualizar el catálogo.',
+        ], 500);
+    }
+}
+
 
 
    public function downloadConfig(Request $request)
