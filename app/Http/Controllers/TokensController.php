@@ -68,8 +68,11 @@ class TokensController extends Controller
             $token->load('usuario');
             if ($token->usuario->role_id == 3) {
                 $token->load('usuario.cerradasAsGuard');
-                $cerrada_id = $token->usuario->cerrada->id;
-                $cerrada_name = $token->usuario->cerrada->group_name;
+                $cerrada = $token->usuario->cerradasAsGuard->find($data['cerrada_id']);
+                if ($cerrada) {
+                    $cerrada_id = $cerrada->id;
+                    $cerrada_name = $cerrada->group_name;
+                }
             } else {
                 $token->load('usuario.familyGroup.cerrada');
                 $cerrada_id = $token->usuario->familyGroup->cerrada->id;
