@@ -67,9 +67,6 @@ class TokensController extends Controller
 
         if (
             !$token ||
-            !$token->usuario ||
-            !$token->usuario->familyGroup ||
-            !$token->usuario->familyGroup->cerrada ||
             $token->usuario->familyGroup->cerrada->id != $data['cerrada_id']
         ) {
             LogToken::create([
