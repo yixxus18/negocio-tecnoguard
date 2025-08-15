@@ -65,6 +65,7 @@ class TokensController extends Controller
         if ($token)
             $token->load('usuario.familyGroup.cerrada');
 
+        Log::info("Token Data: ".$token);
         if (
             !$token ||
             $token->usuario->familyGroup->cerrada->id != $data['cerrada_id']
