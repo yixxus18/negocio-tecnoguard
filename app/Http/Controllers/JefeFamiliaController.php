@@ -168,15 +168,16 @@ class JefeFamiliaController extends Controller
         ], 422);
     }
 
-    $miembro = User::create([
-        'name'       => $validated['name'],
-        'email'      => $validated['email'],
-        'phone'      => $validated['phone'],
-        'password'   => Hash::make($validated['password']),
-        'family_id'  => $jefe_familia->family_id,
-        'is_active'  => true,
-         'role_id'    => 5,
-    ]);
+   $miembro = User::create([
+    'name'              => $validated['name'],
+    'email'             => $validated['email'],
+    'phone'             => $validated['phone'],
+    'password'          => Hash::make($validated['password']),
+    'family_id'         => $jefe_familia->family_id,
+    'is_active'         => true,
+    'email_verified_at' => now(), // o Carbon::now()
+    'role_id'           => 5,
+]);
 
     return response()->json([
         'message' => 'Miembro de familia agregado exitosamente',
