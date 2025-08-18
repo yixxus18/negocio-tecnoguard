@@ -8,6 +8,7 @@ use App\Models\Cerrada;
 use App\Models\TipoServicio;
 use DB;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
@@ -289,17 +290,21 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
     // Validación
     $validated = $request->validate([
         'bitacora_id'          => ['required', 'integer', 'exists:bitacora,id'],
-        'tecnico_id'           => ['nullable', 'integer', 'exists:users,id'],
-        'ssid'                 => ['nullable', 'string', 'max:512'],
-        'password'             => ['nullable', 'string', 'max:512'],
+        'tecnico_id'           => ['required', 'integer', 'exists:users,id'],
+        'ssid'                 => ['required', 'string', 'max:512'],
+        'password'             => ['required', 'string', 'max:512'],
+        'archivo_configuracion'=>['required','string','max:64'],
         'detalles'             => ['required', 'array', 'min:1'],
         'detalles.*.uid'       => ['required', 'string', 'max:64'],
         'detalles.*.nombre_dispositivo' => ['required', 'string', 'max:255'],
-        'detalles.*.pin'       => ['nullable', 'integer'],
+        'detalles.*.pin'       => ['required', 'integer'],
         // Si llega detalles.*.catalogo_id lo ignoramos; no lo validamos ni usamos
     ], [
         'bitacora_id.required' => 'La bitácora es obligatoria.',
         'bitacora_id.exists'   => 'La bitácora indicada no existe.',
+        'archivo_configuracion.required'=>'el nombre es requerido',
+        'archivo_configuracion.string'=>'el nombre debe ser string',
+        'archivo_configuracion.max'=>'Los caracteres maximos deben ser 64',
         'tecnico_id.exists'    => 'El técnico indicado no existe.',
         'detalles.required'    => 'Debes enviar al menos un detalle.',
         'detalles.array'       => 'Los detalles deben enviarse como arreglo.',
@@ -341,6 +346,7 @@ public function crearconfiguracioninicialiot(Request $request, ?int $identificad
                 'tecnico_id'  => $validated['tecnico_id'] ?? $catalogo->tecnico_id,
                 'ssid'        => $validated['ssid']     ?? null,
                 'password'    => $validated['password'] ?? null,
+                'archivo_configuracion'=>$validated['archivo_configuracion']??null,
             ]);
 
             // Reemplazar detalles: borrar y crear de nuevo
@@ -619,4 +625,160 @@ public function newactivityfromtecnichian()
         ],
     ], 200);
 }
+public function DashboardTecnico(Request $request)
+{
+    try {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado.',
+                'data'    => null,
+            ], 401);
+        }
+
+        // Zona horaria base para el dashboard
+        $tz       = 'America/Monterrey';
+        $ahoraTz  = now($tz);
+        // Últimos 7 días hacia atrás, incluyendo hoy
+        $inicioTz = $ahoraTz->copy()->subDays(7)->startOfDay(); // hace 7 días a las 00:00 (Monterrey)
+        $finTz    = $ahoraTz->copy()->endOfDay();               // hoy a las 23:59:59 (Monterrey)
+
+        // Convertir a UTC para consultar en BD (común si las columnas se guardan en UTC)
+        $inicioUtc = $inicioTz->copy()->timezone('UTC');
+        $finUtc    = $finTz->copy()->timezone('UTC');
+
+        // Traer TODAS las bitácoras del técnico en el rango, con cerrada y servicio
+        $bitacoras = Bitacora::with([
+                'cerrada:id,group_name,description',
+                'servicio:id,nombreServicio',
+            ])
+            ->where('tecnico_id', $user->id)
+            ->whereBetween('created_at', [$inicioUtc, $finUtc])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Desglose por estatus (exact match)
+        $desglose = [
+            'Asignado'     => $bitacoras->where('status', 'Asignado')->count(),
+            'En Proceso'   => $bitacoras->where('status', 'En Proceso')->count(),
+            'Concluido'    => $bitacoras->where('status', 'Concluido')->count(),
+            'No concluido' => $bitacoras->where('status', 'No concluido')->count(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dashboard del técnico.',
+            'data'    => [
+                'timezone' => $tz,
+                'rango'    => [
+                    'inicio_local' => $inicioTz->toDateTimeString(),
+                    'fin_local'    => $finTz->toDateTimeString(),
+                    'inicio_utc'   => $inicioUtc->toDateTimeString(),
+                    'fin_utc'      => $finUtc->toDateTimeString(),
+                ],
+                'total'     => $bitacoras->count(),
+                'desglose'  => $desglose,
+                'bitacoras' => $bitacoras, // objeto completo con cerrada y servicio
+            ],
+        ], 200);
+
+    } catch (\Throwable $e) {
+        Log::error('DashboardTecnico: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'No fue posible obtener el dashboard del técnico.',
+        ], 500);
+    }
+}
+
+
+
+public function ConcluirActividad(Request $request, int $bitacora_id)
+{
+    try {
+        $bitacora = Bitacora::find($bitacora_id);
+
+        if (! $bitacora) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La bitácora indicada no existe.',
+            ], 404);
+        }
+        if($bitacora->status == 'No concluido' ||$bitacora->status == 'Concluido'  )
+        {
+            return response()->json([
+                'success' => false,
+                'message' => 'La bitácora indicada ya se ha cerrado.',
+            ], 404);
+        }
+
+        $bitacora->update([
+            'status' => 'Concluido',
+        ]);
+
+        // Si quieres devolver con relaciones:
+        $bitacora->load(['cerrada', 'servicio']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'La actividad fue marcada como Concluido.',
+            'data'    => $bitacora,
+        ], 200);
+
+    } catch (\Throwable $e) {
+        Log::error('ConcluirActividad: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'No fue posible concluir la actividad.',
+        ], 500);
+    }
+}
+
+public function NoConcluidoActividad(Request $request, int $bitacora_id)
+{
+   
+    $validated = $request->validate([
+        'comentario' => ['required', 'string', 'max:256'],
+    ], [
+        'comentario.required' => 'El comentario es obligatorio.',
+        'comentario.string'   => 'El comentario debe ser texto.',
+        'comentario.max'      => 'El comentario no puede exceder de 256 caracteres.',
+    ]);
+
+    try {
+        $bitacora = Bitacora::find($bitacora_id);
+
+        if (! $bitacora) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La bitácora indicada no existe.',
+            ], 404);
+        }
+        
+
+        $bitacora->update([
+            'status'     => 'No concluido',
+            'comentario' => $validated['comentario'],
+        ]);
+
+        // Si quieres devolver con relaciones:
+        $bitacora->load(['cerrada', 'servicio']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'La actividad fue marcada como No concluido y se actualizó el comentario.',
+            'data'    => $bitacora,
+        ], 200);
+
+    } catch (\Throwable $e) {
+        Log::error('NoConcluidoActividad: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'No fue posible marcar la actividad como No concluido.',
+        ], 500);
+    }
+}
+
+
 }

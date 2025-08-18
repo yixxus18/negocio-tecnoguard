@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\JefeCerrada\AsignarGuardiaReq;
 use App\Http\Requests\JefeCerrada\CrearConfigReq;
 use App\Http\Requests\JefeCerrada\CrearPagoReq;
+use App\Models\TokenAcceso;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\JefeCerrada\UpdConfigReq;
 use App\Models\Cerrada;
@@ -465,4 +466,141 @@ public function obtenerusuariosmicerrada(Request $request): JsonResponse
             'status'  => true,
         ],200);
     }
+
+
+public function dashboardjefecerrada(Request $request)
+{
+    $user = $request->user();
+
+    if (! $user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No autenticado.',
+            'data'    => null,
+        ], 401);
+    }
+
+    $tz         = 'America/Monterrey';
+    $endLocal   = now($tz);
+    $startLocal = $endLocal->copy()->subDays(7)->startOfDay();
+
+    // Comparar contra created_at (UTC en BD normalmente)
+    $startUtc = $startLocal->clone()->setTimezone('UTC');
+    $endUtc   = $endLocal->clone()->setTimezone('UTC');
+
+    $cerradas = Cerrada::select('id', 'group_name')
+        ->where('jefe_cerrada_id', $user->id)
+        ->orderBy('group_name')
+        ->get();
+
+    if ($cerradas->isEmpty()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'No administras ninguna cerrada.',
+            'data'    => [
+                'total_cerradas' => 0,
+                'rango' => [
+                    'timezone'    => $tz,
+                    'start_local' => $startLocal->toDateTimeString(),
+                    'end_local'   => $endLocal->toDateTimeString(),
+                    'start_utc'   => $startUtc->toDateTimeString(),
+                    'end_utc'     => $endUtc->toDateTimeString(),
+                ],
+                'cerradas' => [],
+            ],
+        ], 200);
+    }
+
+    $salida = [];
+
+    foreach ($cerradas as $cerrada) {
+        $familyGroupIds = FamilyGroup::where('cerrada_id', $cerrada->id)->pluck('id');
+
+        $membershipIds = FamilyGroup::where('cerrada_id', $cerrada->id)
+            ->whereNotNull('membership_id')
+            ->pluck('membership_id');
+
+        $baseDetails = MembershipDetail::whereIn('membership_id', $membershipIds)
+            ->whereBetween('created_at', [$startUtc, $endUtc]);
+
+        $details = (clone $baseDetails)
+            ->orderByDesc('created_at')
+            ->get([
+                'id',
+                'membership_id',
+                'amount',
+                'date_pay',
+                'date_finalization',
+                'ticket',
+                'estatus',
+                'created_at',
+                'updated_at',
+            ]);
+
+        $estatusCounts = (clone $baseDetails)
+            ->select('estatus', \DB::raw('COUNT(*) AS c'))
+            ->groupBy('estatus')
+            ->pluck('c', 'estatus');
+
+        $countRevision  = (int) ($estatusCounts['revision']  ?? 0);
+        $countValidado  = (int) ($estatusCounts['validado']  ?? 0);
+        $countRechazado = (int) ($estatusCounts['rechazado'] ?? 0);
+
+        // ✅ AQUÍ ESTABA EL PROBLEMA: sumar en membership_details, no en memberships
+        $totalGanado = (float) MembershipDetail::whereIn('membership_id', $membershipIds)
+            ->whereBetween('created_at', [$startUtc, $endUtc])
+            ->where('estatus', 'validado')
+            ->sum('amount');
+
+        $userIdsEnCerrada = User::whereIn('family_id', $familyGroupIds)->pluck('id');
+
+        $tokensGenerados = TokenAcceso::whereIn('usuario_id', $userIdsEnCerrada)
+            ->whereBetween('created_at', [$startUtc, $endUtc])
+            ->count();
+
+        $salida[] = [
+            'cerrada' => [
+                'id'         => $cerrada->id,
+                'group_name' => $cerrada->group_name,
+            ],
+            'rango' => [
+                'timezone'    => $tz,
+                'start_local' => $startLocal->toDateTimeString(),
+                'end_local'   => $endLocal->toDateTimeString(),
+                'start_utc'   => $startUtc->toDateTimeString(),
+                'end_utc'     => $endUtc->toDateTimeString(),
+            ],
+            'membership_details' => [
+                'count'        => $details->count(),
+                'revision'     => $countRevision,
+                'validado'     => $countValidado,
+                'rechazado'    => $countRechazado,
+                'total_ganado' => $totalGanado,
+                'items'        => $details,
+            ],
+            'tokens_acceso' => [
+                'usuarios_en_cerrada' => $userIdsEnCerrada->count(),
+                'generados'           => $tokensGenerados,
+            ],
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Dashboard de jefe de cerrada generado correctamente.',
+        'data'    => [
+            'total_cerradas' => $cerradas->count(),
+            'rango' => [
+                'timezone'    => $tz,
+                'start_local' => $startLocal->toDateTimeString(),
+                'end_local'   => $endLocal->toDateTimeString(),
+                'start_utc'   => $startUtc->toDateTimeString(),
+                'end_utc'     => $endUtc->toDateTimeString(),
+            ],
+            'cerradas' => $salida,
+        ],
+    ], 200);
+}
+
+
 }

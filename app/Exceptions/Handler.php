@@ -8,6 +8,7 @@ use Throwable;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException; // <-- importante
 
 class Handler extends ExceptionHandler
 {
@@ -43,44 +44,55 @@ class Handler extends ExceptionHandler
         $isApiRequest = $request->is('api/*');
 
         if ($isApiRequest || $request->expectsJson()) {
+
+            // 404 por RUTA INEXISTENTE (HTTP 404 de kernel)
+            if ($exception instanceof NotFoundHttpException) {
+                return response()->json([
+                    'error'   => 'NotFoundHttpException',
+                    'message' => 'No existe la ruta indicada',
+                    'data'    => null,
+                    'status'  => false
+                ], 404);
+            }
+
+            // 404 por nombre de ruta no encontrado (route('login') etc.)
+            if ($exception instanceof \Symfony\Component\Routing\Exception\RouteNotFoundException) {
+                return response()->json([
+                    'error'   => 'RouteNotFoundException',
+                    'message' => 'No existe la ruta indicada',
+                    'data'    => null,
+                    'status'  => false
+                ], 404);
+            }
+
             // Model not found
             if ($exception instanceof ModelNotFoundException) {
                 return response()->json([
-                    'error' => 'ModelNotFoundException',
+                    'error'   => 'ModelNotFoundException',
                     'message' => 'Recurso no encontrado',
-                    'data' => null,
-                    'status' => false
+                    'data'    => null,
+                    'status'  => false
                 ], 404);
             }
 
             // No autenticado
             if ($exception instanceof AuthenticationException) {
                 return response()->json([
-                    'error' => 'AuthenticationException',
+                    'error'   => 'AuthenticationException',
                     'message' => 'No autenticado',
-                    'data' => null,
-                    'status' => false
+                    'data'    => null,
+                    'status'  => false
                 ], 401);
             }
 
             // Validación
             if ($exception instanceof ValidationException) {
                 return response()->json([
-                    'error' => 'ValidationException',
+                    'error'   => 'ValidationException',
                     'message' => $exception->getMessage(),
-                    'data' => $exception->errors(),
-                    'status' => false
+                    'data'    => $exception->errors(),
+                    'status'  => false
                 ], 422);
-            }
-
-            // Capturar el error específico de "Route [login] not defined"
-            if ($exception instanceof \Symfony\Component\Routing\Exception\RouteNotFoundException) {
-                return response()->json([
-                    'error' => 'RouteNotFoundException',
-                    'message' => 'Ruta no encontrada: ' . $exception->getMessage(),
-                    'data' => null,
-                    'status' => false
-                ], 404);
             }
 
             // Otros errores
@@ -88,20 +100,20 @@ class Handler extends ExceptionHandler
                 ? $exception->getStatusCode()
                 : 500;
 
-            $error = class_basename($exception);
+            $error   = class_basename($exception);
             $message = $exception->getMessage() ?: 'Error interno del servidor';
 
             $response = [
-                'error' => $error,
+                'error'   => $error,
                 'message' => $message,
-                'data' => null,
-                'status' => false
+                'data'    => null,
+                'status'  => false
             ];
 
             // Si está en modo debug, agregar detalles de la excepción
             if (config('app.debug')) {
                 $response['exception'] = $error;
-                $response['trace'] = $exception->getTrace();
+                $response['trace']     = $exception->getTrace();
             }
 
             return response()->json($response, $status);

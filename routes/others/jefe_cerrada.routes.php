@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\JefeCerradaController;
 use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\SolicitudCambioController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -28,4 +29,9 @@ Route::middleware(['role:2'])->group(function () {
     Route::get('cerrada/config/{configId}', [JefeCerradaController::class, 'obtenerConfigPago']);
     Route::post('config-pagos', [JefeCerradaController::class,'crearConfigPago']);
     Route::post('config-pagos/{configId}', [JefeCerradaController::class,'updateConfigPago']);
+    Route::post('/resolverSolicitud/{solicitud_id}', [SolicitudCambioController::class,'resolverSolicitud']);
+    
+    
+    Route::get('/dashboardjefecerrada', [JefeCerradaController::class, 'dashboardjefecerrada']);
+    Route::get('/provenienteodestino', [SolicitudCambioController::class, 'solicitudesmicerradaprovenienteodestino']);
 });

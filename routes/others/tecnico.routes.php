@@ -18,6 +18,10 @@ Route::middleware(['auth.api','role:1,2,6' ])->group(function () {
     Route::post('/download-config', action: [TecnicoController::class, 'downloadConfig']);
      Route::get('/catalogosDelTecnico',[TecnicoController::class,'catalogosDelTecnico']);
      Route::post('/actualizarCatalogo/{catalogo_id}',[TecnicoController::class,'actualizarCatalogo']);
+     Route::get('/DashboardTecnico',[TecnicoController::class,'DashboardTecnico']);
+     Route::post('/bitacoras/{bitacora_id}/concluir', [TecnicoController::class, 'ConcluirActividad']);
+    Route::post('/bitacoras/{bitacora_id}/no-concluir', [TecnicoController::class, 'NoConcluidoActividad']);
+
 });
 
 Route::post('/configinitial/{identificador?}', action: [TecnicoController::class, 'crearconfiguracioninicialiot']);

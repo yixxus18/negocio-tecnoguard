@@ -8,6 +8,7 @@ use App\Http\Requests\JefeFamilia\AddMiembroReq;
 use App\Models\FamilyGroup;
 use App\Models\Membership;
 use App\Models\MembershipDetail;
+use Illuminate\Support\Facades\Hash;
 use App\Models\SolicitudCambioCerrada;
 use App\Models\TokenAcceso;
 use App\Models\User;
@@ -18,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 use Log;
 use Str;
 
@@ -25,41 +27,131 @@ class JefeFamiliaController extends Controller
 {
     
 
+    public function TokensFamiliares(Request $request)
+    {
+       $user = $request->user();
+
+    if (! $user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No autenticado.',
+            'data'    => null,
+        ], 401);
+    }
+    $tokens= TokenAcceso::where('usuario_id',$user->id)->get()->with('usuario');
+    return response()->json([
+    'message'=>'Tokens Obtenidos correctamente',
+    'status' => true,
+    'data'=>$tokens
+    ],200);
+    }
+
     /**
      * Agregar miembro de familia
      */
-    public function agregarMiembroFamilia(AddMiembroReq $request): JsonResponse
-    {
-        $data = $request->validated();
-        $jefe_familia = $request->user();
-        if($jefe_familia->family_id == null){
-            return response()->json([
-                'message' => 'No cuenta con una familia asignada.',
-                'status' => false
-            ], 400);
-        }
-        $family_members_count = User::where('family_id', $jefe_familia->family_id)->count();
+    // public function agregarMiembroFamilia(AddMiembroReq $request): JsonResponse
+    // {
+    //     $data = $request->validated();
+    //     $jefe_familia = $request->user();
+    //     if($jefe_familia->family_id == null){
+    //         return response()->json([
+    //             'message' => 'No cuenta con una familia asignada.',
+    //             'status' => false
+    //         ], 400);
+    //     }
+    //     $family_members_count = User::where('family_id', $jefe_familia->family_id)->count();
 
-        if ($family_members_count >= 4) {
-            return response()->json([
-                'message' => 'Ha alcanzado el límite de 3 miembros por familia.',
-                'status' => false
-            ], 422);
-        }
-        $miembro = User::where('email', $data['email'])->firstOrFail();
-        if (!$miembro) {
-            return response()->json([
-                'message' => 'El miembro no fue encontrado!',
-                'status' => true
-            ], 404);
-        }
-        $miembro->update(['family_id' => $jefe_familia->family_id, 'is_active' => true]);
+    //     if ($family_members_count >= 4) {
+    //         return response()->json([
+    //             'message' => 'Ha alcanzado el límite de 3 miembros por familia.',
+    //             'status' => false
+    //         ], 422);
+    //     }
+    //     $miembro = User::where('email', $data['email'])->firstOrFail();
+    //     if (!$miembro) {
+    //         return response()->json([
+    //             'message' => 'El miembro no fue encontrado!',
+    //             'status' => true
+    //         ], 404);
+    //     }
+    //     $miembro->update(['family_id' => $jefe_familia->family_id, 'is_active' => true]);
+    //     return response()->json([
+    //         'message' => 'Miembro de familia agregado exitosamente',
+    //         'data' => $miembro,
+    //         'status' => true
+    //     ]);
+    // }
+
+
+    public function agregarMiembroFamilia(Request $request): JsonResponse
+{
+    $jefe_familia = $request->user();
+
+    if ($jefe_familia->family_id === null) {
         return response()->json([
-            'message' => 'Miembro de familia agregado exitosamente',
-            'data' => $miembro,
-            'status' => true
-        ]);
+            'message' => 'No cuenta con una familia asignada.',
+            'status'  => false,
+        ], 400);
     }
+
+    $validated = $request->validate(
+        [
+            'name'     => ['required', 'string', 'max:128'],
+            'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'phone'    => ['required', 'string', 'regex:/^\d{10}$/', Rule::unique('users', 'phone')],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[#$%&@!*?\._\-]).{8,}$/'
+            ],
+        ],
+        [
+            'name.required'      => 'El nombre es obligatorio.',
+            'name.string'        => 'El nombre debe ser texto.',
+            'name.max'           => 'El nombre no puede exceder 128 caracteres.',
+
+            'email.required'     => 'El correo electrónico es obligatorio.',
+            'email.email'        => 'El correo electrónico no es válido.',
+            'email.max'          => 'El correo electrónico no puede exceder 255 caracteres.',
+            'email.unique'       => 'Este correo electrónico ya está registrado.',
+
+            'phone.required'     => 'El teléfono es obligatorio.',
+            'phone.string'       => 'El teléfono debe ser texto.',
+            'phone.regex'        => 'El teléfono debe contener exactamente 10 dígitos.',
+            'phone.unique'       => 'Este teléfono ya está registrado.',
+
+            'password.required'  => 'La contraseña es obligatoria.',
+            'password.string'    => 'La contraseña debe ser texto.',
+            'password.min'       => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.regex'     => 'La contraseña debe incluir al menos 1 mayúscula, 1 número y 1 símbolo (#, $, %, &, @, !, *, ?, ., _, -).',
+        ]
+    );
+
+    $family_members_count = User::where('family_id', $jefe_familia->family_id)->count();
+    if ($family_members_count >= 4) {
+        return response()->json([
+            'message' => 'Ha alcanzado el límite de 3 miembros por familia.',
+            'status'  => false,
+        ], 422);
+    }
+
+    $miembro = User::create([
+        'name'       => $validated['name'],
+        'email'      => $validated['email'],
+        'phone'      => $validated['phone'],
+        'password'   => Hash::make($validated['password']),
+        'family_id'  => $jefe_familia->family_id,
+        'is_active'  => true,
+         'role_id'    => 5,
+    ]);
+
+    return response()->json([
+        'message' => 'Miembro de familia agregado exitosamente',
+        'data'    => $miembro,
+        'status'  => true,
+    ], 201);
+}
 
     /**
      * Obtener miembros de familia
@@ -75,6 +167,106 @@ class JefeFamiliaController extends Controller
             'status' => true
         ]);
     }
+
+
+    public function activarMiembroFamilia(Request $request, $member_id): JsonResponse
+{
+    $jefe_familia = $request->user();
+
+    if (! $jefe_familia) {
+        return response()->json([
+            'message' => 'No autenticado.',
+            'status'  => false,
+            'data'    => null,
+        ], 401);
+    }
+
+    if (empty($jefe_familia->family_id)) {
+        return response()->json([
+            'message' => 'No tienes una familia asociada para activar miembros.',
+            'status'  => false,
+            'data'    => null,
+        ], 422);
+    }
+
+    $miembro = User::find($member_id);
+    if (! $miembro) {
+        return response()->json([
+            'message' => 'Miembro no encontrado.',
+            'status'  => false,
+            'data'    => null,
+        ], 404);
+    }
+
+    // Si pertenece a otra familia distinta, no permitir reasignación silenciosa
+    if (!is_null($miembro->family_id) && $miembro->family_id != $jefe_familia->family_id) {
+        return response()->json([
+            'message' => 'El miembro pertenece a otra familia.',
+            'status'  => false,
+            'data'    => $miembro,
+        ], 422);
+    }
+
+    $miembro->update([
+        'family_id' => $jefe_familia->family_id,
+        'is_active' => true,
+    ]);
+
+    return response()->json([
+        'message' => 'Miembro de familia activado exitosamente',
+        'data'    => $miembro,
+        'status'  => true,
+    ], 200);
+}
+
+
+public function desactivarMiembroFamilia(Request $request, $member_id): JsonResponse
+{
+    $jefe_familia = $request->user();
+
+    if (! $jefe_familia) {
+        return response()->json([
+            'message' => 'No autenticado.',
+            'status'  => false,
+            'data'    => null,
+        ], 401);
+    }
+
+    if (empty($jefe_familia->family_id)) {
+        return response()->json([
+            'message' => 'No tienes una familia asociada.',
+            'status'  => false,
+            'data'    => null,
+        ], 422);
+    }
+
+    $miembro = User::find($member_id);
+    if (! $miembro) {
+        return response()->json([
+            'message' => 'Miembro no encontrado.',
+            'status'  => false,
+            'data'    => null,
+        ], 404);
+    }
+
+    if ($jefe_familia->family_id != $miembro->family_id) {
+        return response()->json([
+            'message' => 'El miembro no pertenece a su familia!',
+            'status'  => false,
+            'data'    => $miembro,
+        ], 422);
+    }
+
+    $miembro->update([
+        'is_active' => false,
+    ]);
+
+    return response()->json([
+        'message' => 'Miembro de familia desactivado exitosamente',
+        'data'    => $miembro,
+        'status'  => true,
+    ], 200);
+}
 
     /**
      * Eliminar miembro de familia
