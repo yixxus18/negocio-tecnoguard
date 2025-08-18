@@ -46,6 +46,9 @@ class Cerrada extends Model
         return $this->belongsTo(User::class, 'guard_id');
     }
 
+    
+
+
     /**
      * Relación con grupos familiares
      */

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bitacora;
+use App\Models\Cerrada;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -10,6 +11,11 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\MembershipDetail;
 use Carbon\Carbon;
+use App\Models\Membership;
+use App\Models\TokenAcceso;
+use App\Models\FamilyGroup;
+use App\Models\Role;
+use Illuminate\Support\Facades\DB;
 use Log;
 
 
@@ -212,18 +218,97 @@ public function ObtenerBitacora(Request $request): JsonResponse
     /**
      * Asignar jefe a una cerrada
      */
-    public function asignarJefeCerrada(Request $request, $id_cerrada): JsonResponse
-    {
-        // TODO: Implementar lógica para asignar jefe a cerrada
-        return response()->json([
-            'message' => 'Jefe asignado exitosamente',
-            'data' => ['id_cerrada' => $id_cerrada]
-        ]);
-    }
+   
 
     /**
      * Crear usuario administrativo
      */
+
+
+    public function dashboardadmin(Request $request): JsonResponse
+{
+    
+    $totalUsuarios   = User::count();
+    $usuariosActivos = User::where('is_active', true)->count();
+    $usuariosInact   = User::where('is_active', false)->count();
+
+   
+    $rolesMap = Role::pluck('name', 'id'); 
+
+    $usuariosPorRolRaw = User::select('role_id', DB::raw('COUNT(*) as total'))
+        ->groupBy('role_id')
+        ->get()
+        ->pluck('total', 'role_id'); 
+
+   
+    $usuariosPorRol = $rolesMap->map(function ($name, $id) use ($usuariosPorRolRaw) {
+        return [
+            'role_id'   => (int) $id,
+            'role_name' => $name,
+            'total'     => (int) ($usuariosPorRolRaw[$id] ?? 0),
+        ];
+    })->values();
+
+    $totalMemberships = Membership::count();
+    $activasMemberships = Membership::where('is_active', true)->count();
+    $inactivasMemberships = Membership::where('is_active', false)->count();
+
+    $totalCerradas = Cerrada::count();
+
+    $tokenTable   = (new TokenAcceso)->getTable();
+    $userTable    = (new User)->getTable();
+    $familyTable  = (new FamilyGroup)->getTable();
+    $cerradaTable = (new Cerrada)->getTable();
+
+    $totalTokens = TokenAcceso::count();
+
+    $tokensPorCerrada = TokenAcceso::query()
+        ->join($userTable,   "{$userTable}.id", '=', "{$tokenTable}.usuario_id")
+        ->leftJoin($familyTable, "{$familyTable}.id", '=', "{$userTable}.family_id")
+        ->leftJoin($cerradaTable, "{$cerradaTable}.id", '=', "{$familyTable}.cerrada_id")
+        ->whereNotNull("{$cerradaTable}.id")
+        ->groupBy("{$cerradaTable}.id", "{$cerradaTable}.group_name")
+        ->orderByDesc(DB::raw('COUNT(*)'))
+        ->get([
+            DB::raw("{$cerradaTable}.id as cerrada_id"),
+            DB::raw("{$cerradaTable}.group_name"),
+            DB::raw("COUNT(*) as tokens"),
+        ])
+        ->map(function ($row) {
+            return [
+                'cerrada_id'   => (int) $row->cerrada_id,
+                'group_name'   => (string) $row->group_name,
+                'tokens'       => (int) $row->tokens,
+            ];
+        });
+
+    // --- Respuesta ---
+    return response()->json([
+        'message' => 'Dashboard admin obtenido correctamente.',
+        'status'  => true,
+        'data'    => [
+            'usuarios' => [
+                'total'     => $totalUsuarios,
+                'activos'   => $usuariosActivos,
+                'inactivos' => $usuariosInact,
+                'por_rol'   => $usuariosPorRol, // [{role_id, role_name, total}, ...]
+            ],
+            'memberships' => [
+                'total'     => $totalMemberships,
+                'activas'   => $activasMemberships,
+                'inactivas' => $inactivasMemberships,
+            ],
+            'cerradas' => [
+                'total' => $totalCerradas,
+            ],
+            'tokens' => [
+                'total'        => $totalTokens,
+                'por_cerrada'  => $tokensPorCerrada, // [{cerrada_id, group_name, tokens}, ...]
+            ],
+        ],
+    ], 200);
+}
+
   public function crearUsuarioAdministrativo(Request $request): JsonResponse
 {
     
@@ -401,6 +486,116 @@ public function getEarningsByCerrada(Request $request): JsonResponse
             'status'  => true,
         ],200);
     }
+
+    public function obtenerjefecerradas()
+    {
+        $jefescerrada = User::where('role_id',2)->get();
+        return response()->json([
+            "message"=>"Datos obtenidos correctamente",
+            "data"=>$jefescerrada
+        ],200);
+    }
+
+    public function asignarjefecerrada(Request $request, int $cerrada_id): JsonResponse
+{
+    // Inyectamos el parámetro de ruta al array a validar
+    $request->merge(['cerrada_id' => $cerrada_id]);
+
+    $validated = $request->validate(
+        [
+            'cerrada_id'      => ['required', 'integer', 'exists:cerradas,id'],
+            'jefe_cerrada_id' => ['required', 'integer', 'exists:users,id'],
+        ],
+        [
+            'cerrada_id.required'      => 'El identificador de la cerrada es obligatorio.',
+            'cerrada_id.integer'       => 'El identificador de la cerrada debe ser un número entero.',
+            'cerrada_id.exists'        => 'La cerrada indicada no existe.',
+            'jefe_cerrada_id.required' => 'El jefe de cerrada es obligatorio.',
+            'jefe_cerrada_id.integer'  => 'El jefe de cerrada debe ser un número entero.',
+            'jefe_cerrada_id.exists'   => 'El usuario indicado como jefe de cerrada no existe.',
+        ]
+    );
+
+    // Recuperamos modelos
+    $cerrada = Cerrada::find($validated['cerrada_id']);
+    $jefe    = User::find($validated['jefe_cerrada_id']);
+
+    if (!$cerrada) {
+        // (Debería estar cubierto por la validación, pero dejamos el guard por si acaso)
+        return response()->json([
+            'message' => 'La cerrada no fue encontrada.',
+            'status'  => false,
+            'data'    => null,
+        ], 404);
+    }
+
+    // Si ya está asignado el mismo jefe, devolvemos éxito idempotente
+    if ((int) $cerrada->jefe_cerrada_id === (int) $jefe->id) {
+        return response()->json([
+            'message' => 'El jefe de cerrada ya estaba asignado.',
+            'status'  => true,
+            'data'    => [
+                'cerrada' => [
+                    'id'                 => $cerrada->id,
+                    'group_name'         => $cerrada->group_name,
+                    'jefe_cerrada_id'    => $jefe->id,
+                    'jefe_cerrada_nombre'=> $jefe->name,
+                ],
+            ],
+        ], 200);
+    }
+
+    // Actualizamos asignación
+    $cerrada->update([
+        'jefe_cerrada_id' => $jefe->id,
+    ]);
+
+    return response()->json([
+        'message' => 'Jefe de cerrada asignado correctamente.',
+        'status'  => true,
+        'data'    => [
+            'cerrada' => [
+                'id'                 => $cerrada->id,
+                'group_name'         => $cerrada->group_name,
+                'jefe_cerrada_id'    => $jefe->id,
+                'jefe_cerrada_nombre'=> $jefe->name,
+            ],
+        ],
+    ], 200);
+}
+
+
+    public function obtenerguardiaslibres(): JsonResponse
+{
+    // Guardias (role_id = 3) que NO tienen ninguna cerrada asignada
+    $guardiasLibres = User::where('role_id', 3)
+        ->whereDoesntHave('cerradasAsGuard')
+        ->get(['id', 'name']);
+
+    if ($guardiasLibres->isEmpty()) {
+        return response()->json([
+            'message' => 'No hay guardias libres disponibles',
+            'data'    => [],
+            'status'  => false,
+        ], 404);
+    }
+
+    $resultado = $guardiasLibres->map(function ($guard) {
+        return [
+            'id'             => $guard->id,
+            'nombre'         => $guard->name,
+            'nombre_cerrada' => null,     // no tienen cerrada asignada
+            'ocupado'        => false,    // explícitamente libres
+        ];
+    });
+
+    return response()->json([
+        'message' => 'Guardias libres obtenidos correctamente',
+        'data'    => $resultado,
+        'status'  => true,
+    ], 200);
+}
+
 
     /**
      * Obtener detalles de un usuario

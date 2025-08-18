@@ -10,6 +10,7 @@ use App\Http\Requests\Cerradas\UpdCerradaReq;
 use App\Models\Cerrada;
 use App\Models\ConfigurationPayDate;
 use App\Models\LocalidadEntrada;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Log;
@@ -19,10 +20,30 @@ class CerradasController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
-    {
-        return response()->json(['data' => Cerrada::all()->load('localidadesEntradas'), 'message' => 'Lista de cerradas obtenida exitosamente.', 'status' => true]);
-    }
+ public function index(): JsonResponse
+{
+    // Eager load de relaciones solicitadas
+    $cerradas = Cerrada::with([
+        'localidadesEntradas',
+        'assignedGuard:id,name,email',
+        'configurationPayDate:id,nombre_configuracion,Fecha_Corte,pay,tiempo_prorroga',
+    ])->get();
+
+    
+    $jefeIds = $cerradas->pluck('jefe_cerrada_id')->filter()->unique();
+    $jefesPorId = User::whereIn('id', $jefeIds)->pluck('name', 'id');
+
+    $cerradas->transform(function ($c) use ($jefesPorId) {
+        $c->setAttribute('nombrejefecerrada', $jefesPorId[$c->jefe_cerrada_id] ?? null);
+        return $c;
+    });
+
+    return response()->json([
+        'data'    => $cerradas->values(),
+        'message' => 'Lista de cerradas obtenida exitosamente.',
+        'status'  => true,
+    ], 200);
+}
 
 
     /**

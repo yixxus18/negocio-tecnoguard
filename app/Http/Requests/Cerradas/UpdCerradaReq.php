@@ -22,12 +22,13 @@ class UpdCerradaReq extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => 'sometimes|string|unique:cerradas,group_name|max:127|min:5',
-            'description' => 'sometimes|string|max:255|min:10',
+            'nombre' => 'required|string|max:127|min:5',
+            'description' => 'required|string|max:255|min:10',
             'jefe_cerrada_id' => 'sometimes|integer|exists:users,id',
-            'configuration_pay_date' => 'sometimes|integer|exists:configuation_pay_date,id',
-            'latitud' => 'sometimes|numeric|between:-90,90',
-            'longitud' => 'sometimes|numeric|between:-180,180',
+            'guard_id' => 'required|integer|exists:users,id',
+            'configuration_pay_date' => 'required|integer|exists:configuration_pay_date,id',
+            'latitud' => 'required|numeric|between:-90,90',
+            'longitud' => 'required|numeric|between:-180,180',
         ];
     }
 }

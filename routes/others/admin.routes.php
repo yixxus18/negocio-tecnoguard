@@ -23,6 +23,7 @@ Route::middleware(['role:1'])->group(function () {
     Route::get('/newactivityfromtecnichianregisters',[TecnicoController::class,'newactivityfromtecnichian']);
 
     Route::get('getguardias', [AdminController::class, 'obtenerGuardiasDisponibles']);
+      Route::get('getguardiaslibres', [AdminController::class, 'obtenerguardiaslibres']);
     Route::get('/getEarningsByCerrada',[AdminController::class,'getEarningsByCerrada']);
     Route::post('/crearUsuarioAdministrativo',[AdminController::class, 'crearUsuarioAdministrativo']);
     Route::get('/dashboardadmin',[AdminUserController::class,'dashboardadmin']);
@@ -30,6 +31,9 @@ Route::middleware(['role:1'])->group(function () {
     Route::post('cerradas/{id}/asignar-jefe', [CerradasController::class,'setJefeDeCerrada']);
     Route::post('cerradas/set-localidad/{id}', [CerradasController::class,'asociarLocalidad']);
     Route::post('cerradas/unset-localidad/{cerradaId}/{localidadId}', [CerradasController::class,'desasociarLocalidad']);
+     Route::get('/obtenerjefecerradas',[AdminController::class,'obtenerjefecerradas']);
+     Route::get('/dashboardadmin',[AdminController::class,'dashboardadmin']);
+    Route::post('/asignarjefecerrada/{cerrada_id}',[AdminController::class, 'asignarjefecerrada']);
 });
 
 

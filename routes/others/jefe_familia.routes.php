@@ -20,6 +20,9 @@ Route::middleware(['role:4'])->group(function () {
         Route::get('/misSolicitudes', [SolicitudCambioController::class, 'misSolicitudes']);
     Route::post('/crearSolicitud', [SolicitudCambioController::class, 'crearSolicitud']);
     Route::get('tokensmifamilia',[JefeFamiliaController::class,'TokensFamiliares']);
+    Route::get('/miscerradascambio',[JefeFamiliaController::class,'cerradasExcluyendoMiCerrada']);
+    Route::get('/dashboardjefefamilia',[JefeFamiliaController::class,'dashboardjefefamilia']);
+    
      Route::get('/cerradasExceptoMiFamilia', [SolicitudCambioController::class, 'cerradasExceptoMiFamilia']);
          Route::post('/desactivarMiembroFamilia/{member_id}', [JefeFamiliaController::class, 'desactivarMiembroFamilia']);
              Route::post('/activarMiembroFamilia/{member_id}', [JefeFamiliaController::class, 'activarMiembroFamilia']);

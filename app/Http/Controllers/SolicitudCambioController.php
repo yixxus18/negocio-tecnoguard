@@ -55,7 +55,6 @@ public function crearSolicitud(Request $request)
         ], 401);
     }
 
-    // 1) ¿Ya tiene una solicitud pendiente?
     $yaPendiente = SolicitudCambioCerrada::where('user_solicitud', $user->id)
         ->where('estado', 'Pendiente')
         ->exists();
@@ -65,7 +64,7 @@ public function crearSolicitud(Request $request)
             'success' => false,
             'message' => 'Ya tienes una solicitud pendiente.',
             'data'    => null,
-        ], 409); // Conflict
+        ], 409); 
     }
 
     // 2) Tomar cerrada de origen desde la familia del usuario
