@@ -49,38 +49,38 @@ class JefeFamiliaController extends Controller
     /**
      * Agregar miembro de familia
      */
-    // public function agregarMiembroFamilia(AddMiembroReq $request): JsonResponse
-    // {
-    //     $data = $request->validated();
-    //     $jefe_familia = $request->user();
-    //     if($jefe_familia->family_id == null){
-    //         return response()->json([
-    //             'message' => 'No cuenta con una familia asignada.',
-    //             'status' => false
-    //         ], 400);
-    //     }
-    //     $family_members_count = User::where('family_id', $jefe_familia->family_id)->count();
+    public function agregarMiembroFamiliausuarioyaexistente(AddMiembroReq $request): JsonResponse
+    {
+        $data = $request->validated();
+        $jefe_familia = $request->user();
+        if($jefe_familia->family_id == null){
+            return response()->json([
+                'message' => 'No cuenta con una familia asignada.',
+                'status' => false
+            ], 400);
+        }
+        $family_members_count = User::where('family_id', $jefe_familia->family_id)->count();
 
-    //     if ($family_members_count >= 4) {
-    //         return response()->json([
-    //             'message' => 'Ha alcanzado el límite de 3 miembros por familia.',
-    //             'status' => false
-    //         ], 422);
-    //     }
-    //     $miembro = User::where('email', $data['email'])->firstOrFail();
-    //     if (!$miembro) {
-    //         return response()->json([
-    //             'message' => 'El miembro no fue encontrado!',
-    //             'status' => true
-    //         ], 404);
-    //     }
-    //     $miembro->update(['family_id' => $jefe_familia->family_id, 'is_active' => true]);
-    //     return response()->json([
-    //         'message' => 'Miembro de familia agregado exitosamente',
-    //         'data' => $miembro,
-    //         'status' => true
-    //     ]);
-    // }
+        if ($family_members_count >= 4) {
+            return response()->json([
+                'message' => 'Ha alcanzado el límite de 3 miembros por familia.',
+                'status' => false
+            ], 422);
+        }
+        $miembro = User::where('email', $data['email'])->firstOrFail();
+        if (!$miembro) {
+            return response()->json([
+                'message' => 'El miembro no fue encontrado!',
+                'status' => true
+            ], 404);
+        }
+        $miembro->update(['family_id' => $jefe_familia->family_id, 'is_active' => true]);
+        return response()->json([
+            'message' => 'Miembro de familia agregado exitosamente',
+            'data' => $miembro,
+            'status' => true
+        ]);
+    }
 
 
     public function agregarMiembroFamilia(Request $request): JsonResponse
