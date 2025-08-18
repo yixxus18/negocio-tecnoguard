@@ -20,7 +20,15 @@ class UserController extends Controller
                 'error' => 'UNAUTHENTICATED'
             ], 401);
         }
-        $user->load(['role', 'familyGroup.cerrada.localidadesEntradas']);
+        if (in_array($user->role_id, [4, 5])) {
+                if ($user->familyGroup && $user->familyGroup->membership) {
+                    $membership = $user->familyGroup->membership;
+                    if ($membership->next_pay < now() && $membership->is_active) {
+                        $membership->update(['is_active' => false]);
+                    }
+                }
+            }
+        $user->load(['role', 'familyGroup.cerrada.localidadesEntradas', 'familyGroup.membership.membershipDetails']);
         if (in_array($user->role_id, [4, 5])) {
             $membershipIsActive = $user->familyGroup->membership->is_active ?? false;
             $user->membership_is_active = $membershipIsActive;
