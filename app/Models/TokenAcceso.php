@@ -21,6 +21,7 @@ class TokenAcceso extends Model
         'valor',
         'puerta',
     ];
+    
 
     protected $casts = [
         'usuario_id' => 'integer',

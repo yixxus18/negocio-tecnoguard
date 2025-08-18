@@ -62,14 +62,27 @@ class TokensController extends Controller
         ]);
         $token = TokenAcceso::where('valor', $data['token'])
             ->where('usos', 1)->first();
-        if($token) $token->load('usuario.familyGroup.cerrada');
+        $cerrada_id = null;
+        $cerrada_name = null;
+        if ($token) {
+            $token->load('usuario');
+            if ($token->usuario->role_id == 3) {
+                $token->load('usuario.cerradasAsGuard');
+                $cerrada = $token->usuario->cerradasAsGuard->find($data['cerrada_id']);
+                if ($cerrada) {
+                    $cerrada_id = $cerrada->id;
+                    $cerrada_name = $cerrada->group_name;
+                }
+            } else {
+                $token->load('usuario.familyGroup.cerrada');
+                $cerrada_id = $token->usuario->familyGroup->cerrada->id;
+                $cerrada_name = $token->usuario->familyGroup->cerrada->group_name;
+            }
+        }
+
 
         if (
-            !$token ||
-            !$token->usuario ||
-            !$token->usuario->familyGroup ||
-            !$token->usuario->familyGroup->cerrada ||
-            $token->usuario->familyGroup->cerrada->id != $data['cerrada_id']
+            !$token || $cerrada_id != $data['cerrada_id']
         ) {
             LogToken::create([
                 'token' => $data['token'],
@@ -88,6 +101,8 @@ class TokensController extends Controller
         $token->update([
             'usos' => 0
         ]);
+
+        $puerta = $token->puerta == 'peatonal' ? 'peatonal' : 'automovil';
         LogToken::create([
             'token' => $data['token'],
             'used_at' => Carbon::now('America/Monterrey')->addHours(5)->format('Y-m-d h:i:s'),
@@ -95,14 +110,16 @@ class TokensController extends Controller
             'nombre' => $token->nombre,
             'was_valid' => true,
             'cerrada' => [
-                'name' => $token->usuario->familyGroup->cerrada->group_name,
-                'id' => $token->usuario->familyGroup->cerrada->id
-            ]
+                'name' => $cerrada_name,
+                'id' => $cerrada_id
+            ],
+            'puerta' => $puerta
         ]);
 
         return response()->json([
             "message" => 'Acceso autorizado!',
-            "status" => true
+            "status" => true,
+            "puerta" => $puerta == 'peatonal' ? 'P' : 'A'
         ]);
 
     }
