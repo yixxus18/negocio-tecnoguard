@@ -28,7 +28,7 @@ class UserController extends Controller
                     }
                 }
             }
-        $user->load(['role', 'familyGroup.cerrada.localidadesEntradas', 'familyGroup.membership.membershipDetails']);
+        $user->load(['role', 'familyGroup.cerrada.localidadesEntradas','familyGroup.cerada.configurationPayDate', 'familyGroup.membership.membershipDetails']);
         if (in_array($user->role_id, [4, 5])) {
             $membershipIsActive = $user->familyGroup->membership->is_active ?? false;
             $user->membership_is_active = $membershipIsActive;
